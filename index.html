@@ -147,6 +147,9 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 input[type=checkbox]{width:26px;height:26px;accent-color:var(--coral);margin:0;cursor:pointer;flex:none}
 @media (prefers-reduced-motion:reduce){.dial.alert{animation:none}button{transition:none}}
 
+.note input[type=password],.note textarea{font:inherit;font-size:1rem;width:100%;border:2px solid var(--ink);border-radius:10px;padding:6px 10px;background:var(--paper);color:var(--ink);margin-bottom:6px;resize:vertical}
+.ans{width:100%;background:var(--paper);border:2.5px dashed var(--ink);border-radius:14px;padding:12px 16px;box-shadow:0 6px 0 var(--shade);font-size:1.2rem;line-height:1.3;white-space:pre-wrap;cursor:pointer;transform:rotate(.5deg)}
+.ans[hidden]{display:none}
 body.drop::after{
   content:"Drop audio to load it";position:fixed;inset:12px;z-index:10;pointer-events:none;
   display:flex;align-items:center;justify-content:center;text-align:center;
@@ -197,6 +200,8 @@ body.drop::after{
   <button id="pip" class="ghost">Float on top</button>
   <button id="mark" class="ghost" title="Shortcut: M">Add marker (M)</button>
   <button id="spk" class="ghost">Add speaker sound</button>
+  <button id="help" class="ghost" title="Shortcut: H">Help me collect (H)</button>
+  <div class="ans" id="ans" hidden title="Click to dismiss"></div>
   <div class="msg" id="msg" role="status"></div>
 
   <div class="note">
@@ -210,6 +215,48 @@ body.drop::after{
     <input type="range" id="rep" min="3" max="60" step="1" value="20">
     <label for="incl">Speaker sound counts as talking <input checked type="checkbox" id="incl"></label>
     <label for="ovl">Overlap waveforms <input type="checkbox" id="ovl" checked></label>
+    <label for="gkey">Groq API key</label>
+    <input type="password" id="gkey" placeholder="gsk_..." autocomplete="off">
+    <label for="ctxs">Audio sent to help <b id="ctxVal">45s</b></label>
+    <input type="range" id="ctxs" min="10" max="120" step="5" value="45">
+    <label for="sysp">System prompt</label>
+    <textarea id="sysp" rows="10">You are a live call coach for a collections agent. The agent is on a call with a customer who has an overdue balance. You can hear the call in real time. The agent will message you only when they are stuck or need help, so respond fast and keep it short.
+
+GOAL
+Help the agent collect the FULL past-due balance TODAY, on this call. A partial payment is not the target. Only fall back to one if the agent asks or the full amount is clearly impossible.
+
+HOW TO RESPOND
+- Read the latest part of the call and the agent's request first.
+- Give the agent something to say right now: one suggested line, in natural spoken language, 1-3 sentences.
+- Add a one-line tip on what to do next, if useful.
+- No long explanations. The agent is mid-call and has seconds, not minutes.
+
+HOW TO GET FULL PAYMENT TODAY
+1. Find the real reason for non-payment (forgot, cash flow, dispute, hardship, avoidance) and tailor your line to it.
+2. Make paying today easy: offer to take payment right now, by card or bank, and walk them through it.
+3. Handle objections calmly and confidently. Acknowledge, then redirect to resolving it today.
+4. Create legitimate urgency: real consequences such as late fees, service impact, or account status, but only if those are accurate for this account.
+5. Use incentives strategically and as a last resort, never as the opening move:
+   - First try: payment ease, empathy, and reasons to resolve today.
+   - Then: a one-time credit, to close the gap if the customer is close.
+   - Then: a discount, only when it is what makes the customer pay the full remaining balance today.
+   - Always tell the agent the smallest incentive likely to close the sale, and what the customer pays after it. Do not give away more than needed.
+6. Always ask for the close: "Can we take care of the full amount right now?"
+
+HARD RULES
+- Never suggest threats, harassment, lies, false deadlines, or false legal claims (for example, claiming a lawsuit is coming when it is not).
+- Never suggest misrepresenting the amount owed, the consequences, or who the agent is.
+- If the customer disputes the debt, says they are in a protected situation, or asks to stop contact, tell the agent to follow company procedure and do not push further.
+- Never suggest discussing the debt with anyone other than the customer.
+- Stay respectful. A calm, confident, helpful tone collects more than pressure does.
+
+additional info
+- we have credit limit 1500 a month, 150 per account max.
+- payment plan counts as a partial payment so its not good.
+- we almost never give extensions cuz it counts as no payment.
+- we benefit from getting disconnected account out of collection more than active account.</textarea>
+    <label for="trans">Last transcript</label>
+    <textarea id="trans" rows="5" readonly placeholder="What was transcribed will show up here after you press Help."></textarea>
   </div>
 </main>
 
@@ -693,6 +740,14 @@ body.drop::after{
       g.fillStyle='#fff'; g.font='34px "Patrick Hand","Segoe Print","Comic Sans MS",cursive';
       g.fillText(view.markText,200,79);
     }
+    if(ansState&&ansState.until>Date.now()){
+      g.setLineDash([]); g.fillStyle=paper; g.strokeStyle=ink; g.lineWidth=4; g.globalAlpha=.97;
+      g.beginPath(); if(g.roundRect) g.roundRect(14,14,372,372,24); else g.rect(14,14,372,372);
+      g.fill(); g.stroke(); g.globalAlpha=1;
+      g.fillStyle=ink; g.textAlign='left'; g.textBaseline='top';
+      g.font=ansState.size+'px "Patrick Hand","Segoe Print","Comic Sans MS",cursive';
+      ansState.lines.forEach(function(l,i){g.fillText(l,30,32+i*ansState.size*1.25)});
+    }
   }
 
   function prepVideo(){
@@ -803,7 +858,7 @@ body.drop::after{
     src.connect(analyser);
     running=true; alerting=false; lastSound=performance.now();
     follow=true; startT=lastSound-peaks.length*BK;
-    startRec(); updPlayer();
+    startRec(); capStart().catch(function(){}); updPlayer();
     btn.textContent='Stop listening'; btn.classList.add('stop');
     if(window.Notification && Notification.permission==='default'){try{Notification.requestPermission()}catch(e){}}
     try{if(navigator.wakeLock){wakeLock=await navigator.wakeLock.request('screen')}}catch(e){}
@@ -818,7 +873,7 @@ body.drop::after{
   }
 
   function stop(){
-    stopRec(); running=false;
+    stopRec(); capStop(); running=false;
     if(tick) clearInterval(tick);
     if(worker){worker.terminate();worker=null}
     if(stream){stream.getTracks().forEach(function(t){t.stop()})}
@@ -848,7 +903,7 @@ body.drop::after{
     spkStream=ds;
     var src=ctx.createMediaStreamSource(new MediaStream(ds.getAudioTracks()));
     spkAn=ctx.createAnalyser(); spkAn.fftSize=4096; spkBuf=new Uint8Array(spkAn.fftSize);
-    spkSrc=src; if(recDest) src.connect(recDest);
+    spkSrc=src; if(recDest) src.connect(recDest); if(cap.spk&&cap.spk.mix) src.connect(cap.spk.mix);
     src.connect(spkAn);
     spkUsed=true; spkBtn.textContent='Remove speaker sound';
     ds.getAudioTracks()[0].addEventListener('ended',stopSpk);
@@ -869,6 +924,7 @@ body.drop::after{
   function clearWave(){
     dropRec();
     peaks=[]; speaks=[]; flags=[]; spkUsed=!!spkAn; follow=true; markers=[]; renderMarkers();
+    [cap.mic,cap.spk].forEach(function(l){if(l){l.chunks=[];l.n=0}});
     if(running){startT=performance.now();restartRec()}
     $('wscroll').scrollLeft=0; drawWave();
   }
@@ -882,8 +938,224 @@ body.drop::after{
   /* the floating window's "next track" button drops a marker */
   try{
     navigator.mediaSession.setActionHandler('nexttrack',addMarker);
-    navigator.mediaSession.metadata=new MediaMetadata({title:'Silence Reminder',artist:'Next track button = add marker'});
+    var ms=navigator.mediaSession;
+    var clr=function(){clearWave();view.markText='Cleared';view.markUntil=Date.now()+1200;draw();setTimeout(draw,1300)};
+    ms.setActionHandler('hangup',clr);                         // red button: clear recording
+    ms.setActionHandler('togglemicrophone',function(){
+      if(!$('ans').hidden){
+        $('ans').hidden=true;
+        if(ansState) ansState.until=0;
+        draw();
+      }else help();
+    }); // mic button: ask for help
+    try{ms.setActionHandler('togglecamera',addMarker)}catch(e){} // camera button: add marker
+    navigator.mediaSession.metadata=new MediaMetadata({title:'Silence Reminder',artist:'Previous = ask for help, Next = add marker'});
   }catch(e){}
+
+  /* ---------- rolling capture for on-demand help ----------
+     Mic and speaker are captured in two separate lanes so the transcript
+     can say who is talking. Both lanes always run in lockstep (the speaker
+     lane just carries silence until speaker sound is added), so their
+     buffers line up at the end and can be merged by time. */
+  var cap={mic:null,spk:null,mute:null,rate:48000,loaded:false};
+  var ansState=null, helping=false;
+  function capPush(lane,f){
+    lane.chunks.push(f); lane.n+=f.length;
+    var max=cap.rate*130;
+    while(lane.chunks.length>1&&lane.n-lane.chunks[0].length>=max) lane.n-=lane.chunks.shift().length;
+  }
+  async function mkLane(){
+    var lane={mix:ctx.createGain(),node:null,chunks:[],n:0};
+    try{
+      if(!ctx.audioWorklet) throw 0;
+      lane.node=new AudioWorkletNode(ctx,'cap');
+      lane.node.port.onmessage=function(e){capPush(lane,e.data)};
+    }catch(e){
+      lane.node=ctx.createScriptProcessor(4096,1,1);
+      lane.node.onaudioprocess=function(e){capPush(lane,new Float32Array(e.inputBuffer.getChannelData(0)))};
+    }
+    lane.mix.connect(lane.node); lane.node.connect(cap.mute);
+    return lane;
+  }
+  async function capStart(){
+    cap.rate=ctx.sampleRate;
+    cap.mute=ctx.createGain(); cap.mute.gain.value=0; cap.mute.connect(ctx.destination);
+    try{
+      if(ctx.audioWorklet&&!cap.loaded){
+        var code='class C extends AudioWorkletProcessor{constructor(){super();this.b=new Float32Array(4096);this.i=0}process(inp){var c=inp[0]&&inp[0][0];if(c){for(var k=0;k<c.length;k++){this.b[this.i++]=c[k];if(this.i===4096){this.port.postMessage(this.b);this.b=new Float32Array(4096);this.i=0}}}return true}}registerProcessor("cap",C)';
+        await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([code],{type:'application/javascript'})));
+        cap.loaded=true;
+      }
+    }catch(e){}
+    cap.mic=await mkLane(); cap.spk=await mkLane();
+    micSrc.connect(cap.mic.mix);
+    if(spkSrc) spkSrc.connect(cap.spk.mix);
+  }
+  function capStop(){
+    [cap.mic,cap.spk].forEach(function(l){
+      if(!l) return;
+      try{l.node.disconnect();if(l.node.port)l.node.port.onmessage=null;l.node.onaudioprocess=null}catch(e){}
+      try{l.mix.disconnect()}catch(e){}
+      l.chunks=[]; l.n=0;
+    });
+    try{if(cap.mute)cap.mute.disconnect()}catch(e){}
+    cap.mic=cap.spk=cap.mute=null;
+  }
+  /* last `sec` seconds of one lane as 16 kHz mono WAV, with leading/trailing silence trimmed.
+     blob.dur = length of the trimmed clip, blob.tail = seconds cut off the end (so timing stays relative to "now") */
+  function capWav(lane,sec,thr){
+    var need=Math.min(lane.n,Math.round(sec*cap.rate)), all=new Float32Array(need), o=need, i, j, k;
+    for(i=lane.chunks.length-1;i>=0&&o>0;i--){
+      var c=lane.chunks[i], take=Math.min(c.length,o);
+      all.set(c.subarray(c.length-take),o-take); o-=take;
+    }
+    var ratio=cap.rate/16000, len=Math.floor(need/ratio), pcm=new Int16Array(len), peak=0;
+    for(j=0;j<len;j++){
+      var a=Math.floor(j*ratio), z=Math.min(need,Math.max(a+1,Math.floor((j+1)*ratio))), s=0;
+      for(k=a;k<z;k++) s+=all[k];
+      s=Math.max(-1,Math.min(1,s/Math.max(1,z-a)));
+      if(Math.abs(s)>peak) peak=Math.abs(s);
+      pcm[j]=Math.round(s*(s<0?32768:32767));
+    }
+    if(peak<0.01) return null;   /* effectively silent: skip it (avoids Whisper hallucinations) */
+    /* trim leading/trailing silence so the model never sees (and invents text for) dead air */
+    var WIN=800, THR=Math.max(330,(thr||0)*32768*0.5), first=-1, last=-1, w, m, q;
+    for(w=0;w*WIN<len;w++){
+      m=0; for(q=w*WIN;q<Math.min(len,(w+1)*WIN);q++){var v=Math.abs(pcm[q]);if(v>m)m=v}
+      if(m>THR){if(first<0)first=w;last=w}
+    }
+    if(first<0) return null;
+    var PAD=4000, from=Math.max(0,first*WIN-PAD), to=Math.min(len,(last+1)*WIN+PAD);
+    var tail=(len-to)/16000;
+    pcm=pcm.subarray(from,to); len=pcm.length;
+    var hdr=new DataView(new ArrayBuffer(44));
+    function str(off,t){for(var q=0;q<t.length;q++)hdr.setUint8(off+q,t.charCodeAt(q))}
+    str(0,'RIFF'); hdr.setUint32(4,36+len*2,true); str(8,'WAVE'); str(12,'fmt ');
+    hdr.setUint32(16,16,true); hdr.setUint16(20,1,true); hdr.setUint16(22,1,true);
+    hdr.setUint32(24,16000,true); hdr.setUint32(28,32000,true); hdr.setUint16(32,2,true); hdr.setUint16(34,16,true);
+    str(36,'data'); hdr.setUint32(40,len*2,true);
+    var blob=new Blob([hdr,pcm],{type:'audio/wav'});
+    blob.dur=len/16000;
+    blob.tail=tail;
+    blob.pcm=pcm;
+    blob.thr=THR;
+    return blob;
+  }
+
+  /* ---------- show the answer: page card, floating window, notification ---------- */
+  function layoutAns(text){
+    var maxW=340, maxH=330, size=34, lines=[];
+    for(;size>=8;size-=1){
+      g.font=size+'px "Patrick Hand","Segoe Print","Comic Sans MS",cursive';
+      lines=[];
+      text.split('\n').forEach(function(par){
+        var line='';
+        par.split(/\s+/).forEach(function(w){
+          var t=line?line+' '+w:w;
+          if(g.measureText(t).width>maxW&&line){lines.push(line);line=w}else line=t;
+        });
+        lines.push(line);
+      });
+      if(lines.length*size*1.25<=maxH) break;
+    }
+    ansState={lines:lines,size:size,until:Date.now()+45000};
+  }
+  function showAns(text){
+    var box=$('ans'); box.hidden=false; box.innerHTML='';
+    box.appendChild(document.createTextNode(text));
+    layoutAns(text); draw();
+  }
+  $('ans').addEventListener('click',function(){$('ans').hidden=true;if(ansState)ansState.until=0;draw()});
+
+  /* ---------- Groq (on demand only) ---------- */
+  function load(k,d){try{return localStorage.getItem(k)||d}catch(e){return d}}
+  function save(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  $('gkey').value=load('sr_gkey',''); $('sysp').value=load('sr_sysp',$('sysp').value);
+  $('ctxs').value=load('sr_ctxs','45'); $('ctxVal').textContent=$('ctxs').value+'s';
+  var ctxWant=+$('ctxs').value;   /* what the user picked; only changes when they move the slider */
+  $('gkey').addEventListener('input',function(){save('sr_gkey',$('gkey').value.trim())});
+  $('sysp').addEventListener('input',function(){save('sr_sysp',$('sysp').value)});
+  $('ctxs').addEventListener('input',function(){ctxWant=+$('ctxs').value;$('ctxVal').textContent=$('ctxs').value+'s';save('sr_ctxs',$('ctxs').value)});
+  async function groqErr(r){
+    try{var j=await r.json();return (j.error&&j.error.message)||('HTTP '+r.status)}catch(e){return 'HTTP '+r.status}
+  }
+  /* transcribe one lane, returning [{t,text,who}] with t = seconds relative to the end of the buffer */
+  async function transcribeLane(blob,who,key){
+    if(!blob) return [];
+    var fd=new FormData();
+    fd.append('file',blob,'audio.wav');
+    fd.append('model','whisper-large-v3-turbo');
+    fd.append('response_format','verbose_json');
+    fd.append('timestamp_granularities[]','segment');
+    fd.append('temperature','0');
+    var r=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd});
+    if(!r.ok) throw new Error(await groqErr(r));
+    var j=await r.json(), out=[];
+    (j.segments||[]).forEach(function(s){
+      var tx=(s.text||'').trim();
+      if(!tx) return;
+      if(s.no_speech_prob>0.6||s.avg_logprob<-1.2) return;   /* likely noise, not speech */
+      /* drop segments that sit over silent audio (Whisper hallucinations) */
+      var a=Math.max(0,Math.floor(s.start*16000)), z=Math.min(blob.pcm.length,Math.ceil(s.end*16000)), mx=0;
+      for(var q=a;q<z;q++){var v=Math.abs(blob.pcm[q]);if(v>mx)mx=v}
+      if(mx<blob.thr) return;
+      out.push({t:s.start-blob.dur-blob.tail,text:tx,who:who});
+    });
+    if(!out.length&&!(j.segments&&j.segments.length)&&(j.text||'').trim()) out.push({t:-blob.dur-blob.tail,text:j.text.trim(),who:who});
+    return out;
+  }
+  async function help(){
+    if(helping) return;
+    if(!running||!cap.mic||cap.mic.n<cap.rate){showMsg('Start listening first, then ask for help.');return}
+    var key=$('gkey').value.trim();
+    if(!key){showMsg('Paste your Groq API key in the settings first.');return}
+    helping=true; $('help').disabled=true;
+    showAns('Thinking\u2026');
+    try{
+      /* use the smaller of what the user picked and what is actually captured, every call */
+      var avail=Math.max(1,Math.floor(cap.mic.n/cap.rate));   /* seconds actually captured */
+      var sec=Math.min(ctxWant,avail);
+      $('ctxs').value=sec;
+      $('ctxVal').textContent=sec+'s';
+      var micBlob=capWav(cap.mic,sec,0.05-(+sens.value-1)*0.0045), spkBlob=(spkAn&&cap.spk)?capWav(cap.spk,sec,0.05-(+$('ssens').value-1)*0.0045):null;
+      var parts=await Promise.all([transcribeLane(micBlob,'Me',key),transcribeLane(spkBlob,'Them',key)]);
+      var all=parts[0].concat(parts[1]).sort(function(a,b){return a.t-b.t});
+      var lines=[];
+      all.forEach(function(s){
+        var last=lines[lines.length-1];
+        if(last&&last.who===s.who) last.text+=' '+s.text; else lines.push({who:s.who,text:s.text});
+      });
+      var heard=lines.map(function(l){return l.who+': '+l.text}).join('\n');
+      var tr=$('trans'); tr.value=heard; tr.style.height='auto'; tr.style.height=tr.scrollHeight+4+'px';   /* grow to show the whole transcript */
+      if(!heard){showAns('I could not hear any speech in that stretch.');return}
+      var sys=($('sysp').value.trim()||$('sysp').defaultValue.trim());
+        var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},
+        body:JSON.stringify({model:'qwen/qwen3.8-27b',temperature:0.5,max_tokens:500,messages:[
+            {role:'system',content:sys},
+            {role:'user',content:'Transcript of the last moments of my conversation. "Me" is my microphone (me), "Them" is the other side (speaker or the customer\'s audio). Lines are in time order:\n'+heard}
+        ]})
+        });
+      if(!r.ok) throw new Error(await groqErr(r));
+      var reply=(((await r.json()).choices||[{}])[0].message||{}).content||'';
+      reply=reply.trim()||'No suggestion came back.';
+      showAns(reply);
+      if(window.Notification&&Notification.permission==='granted'&&document.hidden){
+        try{new Notification('Collection tip',{body:reply})}catch(e){}
+      }
+    }catch(e){
+      showAns('Help failed: '+((e&&e.message)||e));
+    }finally{
+      helping=false; $('help').disabled=false;
+    }
+  }
+  $('help').addEventListener('click',help);
+  document.addEventListener('keydown',function(e){
+    if((e.key==='h'||e.key==='H')&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&!/^(INPUT|TEXTAREA|SELECT)$/.test((e.target&&e.target.tagName)||'')){
+      e.preventDefault(); help();
+    }
+  });
 
   /* ---------- drop audio files ---------- */
   var dragDepth=0;
