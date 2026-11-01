@@ -267,6 +267,7 @@ additional info
       msg=$('msg'), limit=$('limit'), limVal=$('limVal'), sens=$('sens'), beadsEl=$('beads');
   var stream=null, ctx=null, analyser=null, buf=null, wakeLock=null, tick=null, worker=null, msgTimer=null;
   var lastSound=0, lastAlert=0, lastRun=0, alerting=false, running=false;
+  var MAX_REC=3600; /* recording cap in seconds (60 minutes) */
   var N=14, beads=[];
   for(var b=0;b<N;b++){var el=document.createElement('i');beadsEl.appendChild(el);beads.push(el)}
 
@@ -835,6 +836,11 @@ additional info
     if(now-lastRun<30) return;
     lastRun=now;
     analyze(now); update(now);
+    /* recording stops automatically after 60 minutes */
+    if(rec && peaks.length*BK/1000>=MAX_REC){
+      stopRec();
+      showMsg('Recording stopped at 60 minutes.');
+    }
   }
 
   async function start(){
