@@ -1,0 +1,1485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Silence Reminder float</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat+Brush&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --mat:#2e6e5a; --grid:rgba(255,255,255,.13); --grid2:rgba(255,255,255,.06);
+  --paper:#fffdf7; --ink:#1f2a4d; --note:#ffe17d; --blush:#ffd3cc;
+  --yarn:#2f80c8; --coral:#ef5b4c; --felt:#f5b83d; --pink:#f4a6b8; --sky:#8fd0ee; --lime:#8bb83a;
+  --shade:rgba(10,30,25,.35);
+  --hand:"Patrick Hand","Segoe Print","Bradley Hand","Comic Sans MS",cursive;
+  --brush:"Caveat Brush","Segoe Print","Bradley Hand","Comic Sans MS",cursive;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--mat:#193a31;--grid:rgba(255,255,255,.09);--grid2:rgba(255,255,255,.04);--paper:#efe9da;--note:#e8c964;--blush:#f0bdb5;--shade:rgba(0,0,0,.5);}
+}
+:root[data-theme="dark"]{--mat:#193a31;--grid:rgba(255,255,255,.09);--grid2:rgba(255,255,255,.04);--paper:#efe9da;--note:#e8c964;--blush:#f0bdb5;--shade:rgba(0,0,0,.5);}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;color:var(--ink);font-family:var(--hand);font-size:1.15rem;
+  background-color:var(--mat);
+  background-image:
+    linear-gradient(var(--grid) 1.5px,transparent 1.5px),
+    linear-gradient(90deg,var(--grid) 1.5px,transparent 1.5px),
+    linear-gradient(var(--grid2) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid2) 1px,transparent 1px);
+  background-size:80px 80px,80px 80px,16px 16px,16px 16px;
+  display:flex;justify-content:center;
+}
+main{width:100%;max-width:440px;padding:34px 22px 48px;display:flex;flex-direction:column;align-items:center;gap:26px}
+
+.tape{
+  font-family:var(--brush);font-size:2.3rem;line-height:1;color:var(--ink);
+  padding:12px 34px;transform:rotate(-2.5deg);position:relative;
+  background:repeating-linear-gradient(-45deg,var(--pink) 0 10px,#fbd2dc 10px 20px);
+  box-shadow:0 3px 0 var(--shade);
+  clip-path:polygon(0 0,3% 12%,0 25%,3% 38%,0 50%,3% 62%,0 75%,3% 88%,0 100%,100% 100%,97% 88%,100% 75%,97% 62%,100% 50%,97% 38%,100% 25%,97% 12%,100% 0);
+}
+h1{margin:0;font:inherit}
+
+.dial{position:relative;width:min(80vw,310px);aspect-ratio:1;filter:drop-shadow(0 6px 0 var(--shade))}
+.dial svg{width:100%;height:100%;display:block}
+.paper{fill:var(--paper);transition:fill .3s}
+.edge{fill:none;stroke:var(--ink);stroke-width:.8;stroke-dasharray:2.4 2.4;opacity:.5}
+.stitch{fill:none;stroke:var(--ink);stroke-width:1.4;stroke-dasharray:3 3.4;opacity:.45}
+.yarn{fill:none;stroke:var(--yarn);stroke-width:8;stroke-linecap:round;transition:stroke .3s}
+.fluff{fill:none;stroke:#fff;stroke-width:1.6;stroke-dasharray:1.2 2.6;opacity:.55}
+.center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;padding:0 22%}
+.time{font-family:var(--brush);font-size:clamp(3rem,15vw,4.4rem);line-height:1;font-variant-numeric:tabular-nums}
+.state{font-size:1.15rem;line-height:1.15;min-height:2.3em;display:flex;align-items:center}
+.dial.alert .paper{fill:var(--blush)}
+.dial.alert .yarn{stroke:var(--coral)}
+.dial.alert .time,.dial.alert .state{color:var(--coral)}
+.dial.alert{animation:wiggle .5s ease-in-out infinite}
+@keyframes wiggle{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
+
+.beads{display:flex;gap:6px;height:26px;align-items:flex-end;width:100%;justify-content:center}
+.beads i{width:14px;height:100%;border-radius:8px;background:rgba(255,255,255,.18);border:2px dashed rgba(255,255,255,.45);transition:background .08s,border-color .08s}
+.beads i:nth-child(3n+1).on{background:var(--pink)}
+.beads i:nth-child(3n+2).on{background:var(--felt)}
+.beads i:nth-child(3n).on{background:var(--sky)}
+.beads i.on{border-color:var(--ink);border-style:solid}
+
+.wave{width:min(92vw,1600px);flex:none;background:var(--paper);border:2.5px dashed var(--ink);border-radius:14px;padding:10px 22px 8px;box-shadow:0 6px 0 var(--shade);transform:rotate(-.6deg)}
+.wave .cap{display:flex;justify-content:space-between;font-size:1rem;margin-bottom:2px}
+.wave .cap b{font-family:var(--brush);font-weight:400;font-size:1.2rem}
+.wscroll{overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.wwrap{position:relative}
+.wlab{position:absolute;left:6px;z-index:1;pointer-events:none;font-size:.85rem;line-height:1.3;padding:0 7px;border-radius:9px;background:rgba(255,253,247,.8)}
+#lyou{color:var(--yarn)}
+#lspk{color:#5f8a1f}
+.wscroll::-webkit-scrollbar{display:none;height:0}
+.wave .cap{align-items:center}
+.wave .cap .rt{display:flex;align-items:center;gap:12px}
+.wave .cap button{font-size:1.05rem;padding:2px 16px;margin:0;box-shadow:0 3px 0 var(--shade)}
+.wave .cap button::after{inset:3px;border-width:2px}
+.wbar{position:relative;height:16px;margin-top:6px;border:2px dashed var(--ink);border-radius:999px;touch-action:none;cursor:pointer}
+.wbar i{position:absolute;top:1px;bottom:1px;left:0;min-width:30px;border-radius:999px;background:var(--felt);border:2px solid var(--ink);cursor:grab;touch-action:none}
+.wbar i:active{cursor:grabbing}
+.wbar i b{position:absolute;top:-2px;bottom:-2px;width:18px;cursor:ew-resize;touch-action:none}
+.wbar i b.l{left:-4px}
+.wbar i b.r{right:-4px}
+.wbar i b::after{content:"";position:absolute;top:4px;bottom:4px;left:50%;width:3px;margin-left:-1.5px;border-radius:2px;background:var(--ink);opacity:.55}
+/* The canvas is only as wide as the visible part of the wave. It sticks to the left edge of the
+   scroller while the (empty) .wcan element provides the full scroll width. */
+.wave canvas{display:block;height:150px;position:sticky;left:0}
+.wcan{position:relative;width:max-content;min-width:100%}
+.wcan.seek{cursor:pointer}
+#phead{position:absolute;top:0;bottom:18px;width:4px;margin-left:-2px;background:var(--coral);border:1.5px solid var(--ink);border-radius:3px;pointer-events:none;display:none}
+.pl{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.pl[hidden]{display:none}
+.pl button{font-size:1.1rem;padding:4px 16px;min-width:0;margin:0;box-shadow:0 3px 0 var(--shade)}
+.pl button::after{inset:3px;border-width:2px}
+.pl button:disabled{opacity:.45;cursor:default}
+#pplay{min-width:68px;font-size:1.3rem;background:var(--coral);color:#fff}
+#pplay::after{border-color:#fff}
+#pdownload{background:var(--sky)}
+#ptime{font-variant-numeric:tabular-nums;min-width:5.6em;text-align:center}
+.mk{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-start;margin-top:8px}
+.mk input{font:inherit;font-size:.95rem;width:9em;padding:1px 10px;border:2px solid var(--ink);border-radius:999px;background:var(--paper);color:var(--ink)}
+.mk[hidden]{display:none}
+.mk .chip{display:inline-flex;align-items:stretch}
+.mk .chip button{font-size:.95rem;padding:1px 10px;min-width:0;margin:0;background:var(--pink);box-shadow:0 2px 0 var(--shade)}
+.mk .chip button::after{inset:2px;border-width:1.5px}
+.mk .chip button.x{padding:1px 8px;margin-left:3px;background:var(--paper)}
+#selInfo{font-size:.92rem;min-height:1.3em;color:var(--ink);opacity:.8;text-align:center;line-height:1.3}
+
+button{
+  font-family:var(--brush);font-size:1.7rem;color:var(--ink);cursor:pointer;
+  background:var(--felt);border:0;border-radius:999px;padding:16px 44px;min-width:240px;position:relative;
+  box-shadow:0 6px 0 var(--shade);transition:transform .1s,box-shadow .1s;
+}
+button::after{content:"";position:absolute;inset:6px;border:2.5px dashed var(--ink);border-radius:999px;opacity:.55;pointer-events:none}
+button:active{transform:translateY(5px);box-shadow:0 1px 0 var(--shade)}
+button:disabled{opacity:.6;cursor:default}
+button.stop{background:var(--paper)}
+button.ghost{font-size:1.3rem;padding:10px 28px;min-width:0;background:var(--sky);margin-top:-12px}
+button.ghost::after{inset:4px}
+button[hidden]{display:none}
+button:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:4px}
+.msg{min-height:1.3em;color:#fff;text-align:center;font-size:1.05rem;margin-top:-10px;text-shadow:0 1px 0 var(--shade);opacity:1;transition:opacity .3s}
+
+.note{
+  position:relative;width:100%;background:var(--note);padding:30px 22px 20px;transform:rotate(1.2deg);
+  box-shadow:0 6px 0 var(--shade);display:grid;gap:6px;
+  border-radius:2px 2px 26px 2px;
+}
+.note::before{
+  content:"";position:absolute;top:-14px;left:50%;width:110px;height:28px;transform:translateX(-50%) rotate(-3deg);
+  background:repeating-linear-gradient(90deg,rgba(143,208,238,.85) 0 10px,rgba(255,255,255,.75) 10px 20px);
+}
+.note label{display:flex;justify-content:space-between;align-items:baseline;font-size:1.2rem}
+.note label b{font-family:var(--brush);font-weight:400;font-size:1.35rem}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;margin:0 0 6px}
+input[type=range]::-webkit-slider-runnable-track{height:0;border-top:3px dashed var(--ink)}
+input[type=range]::-moz-range-track{height:0;border-top:3px dashed var(--ink)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--coral);border:3px solid var(--ink);margin-top:-13px;box-shadow:0 2px 0 var(--shade)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--coral);border:3px solid var(--ink)}
+
+input[type=checkbox]{width:26px;height:26px;accent-color:var(--coral);margin:0;cursor:pointer;flex:none}
+@media (prefers-reduced-motion:reduce){.dial.alert{animation:none}button{transition:none}}
+
+.note input[type=password],.note textarea{font:inherit;font-size:1rem;width:100%;border:2px solid var(--ink);border-radius:10px;padding:6px 10px;background:var(--paper);color:var(--ink);margin-bottom:6px;resize:vertical}
+.ans{width:100%;background:var(--paper);border:2.5px dashed var(--ink);border-radius:14px;padding:12px 16px;box-shadow:0 6px 0 var(--shade);font-size:1.2rem;line-height:1.3;white-space:pre-wrap;cursor:pointer;transform:rotate(.5deg)}
+.ans[hidden]{display:none}
+body.drop::after{
+  content:"Drop audio to load it";position:fixed;inset:12px;z-index:10;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  font-family:var(--brush);font-size:2.4rem;color:#fff;
+  background:rgba(0,0,0,.4);border:4px dashed #fff;border-radius:24px;
+}
+</style>
+</head>
+<body>
+<main>
+  <div class="dial" id="dial" role="timer" aria-live="off">
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      <circle class="paper" cx="60" cy="60" r="58"/>
+      <circle class="edge" cx="60" cy="60" r="55.5"/>
+      <g transform="rotate(-90 60 60)">
+        <circle class="stitch" cx="60" cy="60" r="47"/>
+        <circle class="yarn" id="prog" cx="60" cy="60" r="47" pathLength="100" stroke-dasharray="100" stroke-dashoffset="0"/>
+        <circle class="fluff" id="fluff" cx="60" cy="60" r="47" pathLength="100" stroke-dashoffset="0"/>
+      </g>
+    </svg>
+    <div class="center">
+      <div class="time" id="time">0:00</div>
+      <div class="state" id="state">Not listening</div>
+    </div>
+  </div>
+
+  <div class="beads" id="beads" aria-hidden="true"></div>
+
+  <div class="wave">
+    <div class="cap"><b>Session wave</b><span class="rt"><span id="wtime">0:00</span><button id="clr" class="ghost" type="button">Clear</button></span></div>
+    <div class="wwrap"><div class="wscroll" id="wscroll"><div class="wcan" id="wcan"><canvas id="wave" role="img" aria-label="Waveform of the session so far"></canvas><div id="phead"></div></div></div><span class="wlab" id="lyou" hidden>you</span><span class="wlab" id="lspk" hidden>speaker</span></div>
+    <div class="wbar" id="wbar" title="Drag the ends to zoom, double-click to reset"><i id="wthumb"><b class="l"></b><b class="r"></b></i></div>
+    <div class="pl" id="pl" hidden>
+      <button id="pback" type="button" aria-label="Back 10 seconds">&minus;10</button>
+      <button id="pplay" type="button" aria-label="Play">&#9654;</button>
+      <button id="pfwd" type="button" aria-label="Forward 10 seconds">+10</button>
+      <span id="ptime">0:00 / 0:00</span>
+      <button id="prate" type="button" aria-label="Playback speed">1&times;</button>
+      <button id="pdownload" type="button">Download</button>
+    </div>
+    <div id="selInfo" aria-live="polite"></div>
+    <div class="mk" id="mk" hidden></div>
+  </div>
+
+  <button id="btn">Start listening</button>
+  <button id="pip" class="ghost">Float on top</button>
+  <button id="mark" class="ghost" title="Shortcut: M">Add marker (M)</button>
+  <button id="spk" class="ghost">Add speaker sound</button>
+  <button id="help" class="ghost" title="Shortcut: H">Help me collect (H)</button>
+  <button id="trbtn" class="ghost" title="Transcribe the selected section" hidden>Transcribe selection</button>
+  <div class="ans" id="ans" hidden title="Click to dismiss"></div>
+  <div class="msg" id="msg" role="status"></div>
+
+  <div class="note">
+    <label for="limit">Quiet limit <b id="limVal">2:00</b></label>
+    <input type="range" id="limit" min="30" max="300" step="15" value="120">
+    <label for="sens">Mic sensitivity <b id="sensVal">7</b></label>
+    <input type="range" id="sens" min="1" max="10" value="7">
+    <label for="ssens">Speaker sensitivity <b id="ssensVal">1</b></label>
+    <input type="range" id="ssens" min="1" max="10" value="1">
+    <label for="rep">Nag me every <b id="repVal">20s</b></label>
+    <input type="range" id="rep" min="3" max="60" step="1" value="20">
+    <label for="incl">Speaker sound counts as talking <input checked type="checkbox" id="incl"></label>
+    <label for="ovl">Overlap waveforms <input type="checkbox" id="ovl" checked></label>
+    <label for="gkey">Groq API key</label>
+    <input type="password" id="gkey" placeholder="gsk_..." autocomplete="off">
+    <label for="ctxs">Audio sent to live help <b id="ctxVal">45s</b></label>
+    <input type="range" id="ctxs" min="10" max="180" step="5" value="45">
+    <label for="sysp">System prompt</label>
+    <textarea id="sysp" rows="10">You are a live call coach for a collections agent. The agent is on a call with a customer who has an overdue balance. You can hear the call in real time. The agent will message you only when they are stuck or need help, so respond fast and keep it short.
+
+GOAL
+Help the agent collect the FULL past-due balance TODAY, on this call. A partial payment is not the target. Only fall back to one if the agent asks or the full amount is clearly impossible.
+
+HOW TO RESPOND
+- Read the latest part of the call and the agent's request first.
+- Give the agent something to say right now: one suggested line, in natural spoken language, 1-3 sentences.
+- Add a one-line tip on what to do next, if useful.
+- No long explanations. The agent is mid-call and has seconds, not minutes.
+
+HOW TO GET FULL PAYMENT TODAY
+1. Find the real reason for non-payment (forgot, cash flow, dispute, hardship, avoidance) and tailor your line to it.
+2. Make paying today easy: offer to take payment right now, by card or bank, and walk them through it.
+3. Handle objections calmly and confidently. Acknowledge, then redirect to resolving it today.
+4. Create legitimate urgency: real consequences such as late fees, service impact, or account status, but only if those are accurate for this account.
+5. Use incentives strategically and as a last resort, never as the opening move:
+   - First try: payment ease, empathy, and reasons to resolve today.
+   - Then: a one-time credit, to close the gap if the customer is close.
+   - Then: a discount, only when it is what makes the customer pay the full remaining balance today.
+   - Always tell the agent the smallest incentive likely to close the sale, and what the customer pays after it. Do not give away more than needed.
+6. Always ask for the close: "Can we take care of the full amount right now?"
+
+HARD RULES
+- Never suggest threats, harassment, lies, false deadlines, or false legal claims (for example, claiming a lawsuit is coming when it is not).
+- Never suggest misrepresenting the amount owed, the consequences, or who the agent is.
+- If the customer disputes the debt, says they are in a protected situation, or asks to stop contact, tell the agent to follow company procedure and do not push further.
+- Never suggest discussing the debt with anyone other than the customer.
+- Stay respectful. A calm, confident, helpful tone collects more than pressure does.
+
+additional info
+- we have credit limit 1500 a month, 150 per account max.
+- payment plan counts as a partial payment so its not good.
+- we almost never give extensions cuz it counts as no payment.
+- we benefit from getting disconnected account out of collection more than active account.</textarea>
+    <label for="trans">Last transcript</label>
+    <textarea id="trans" rows="5" readonly placeholder="What was transcribed will show up here after you press Help or Transcribe."></textarea>
+  </div>
+</main>
+
+<script>
+(function(){
+  var $ = function(id){return document.getElementById(id)};
+  var btn=$('btn'), pipBtn=$('pip'), dial=$('dial'), prog=$('prog'), fluff=$('fluff'), timeEl=$('time'), stateEl=$('state'),
+      msg=$('msg'), limit=$('limit'), limVal=$('limVal'), sens=$('sens'), beadsEl=$('beads');
+  var stream=null, ctx=null, analyser=null, buf=null, wakeLock=null, tick=null, worker=null, workerUrl=null, msgTimer=null;
+  var lastSound=0, lastAlert=0, lastRun=0, lastDraw=0, alerting=false, running=false, starting=false;
+  var N=14, beads=[];
+
+  /* ---------- limits ---------- */
+  var MAX_SEC=3600;      /* recording window that is kept (older audio is dropped) */
+  var TRIM_STEP=15;      /* the window is trimmed in steps of this many seconds once it is over the limit */
+  var ROT_SEC=60;        /* a new recording segment starts this often, so old audio can be dropped whole */
+  var LIVE_SEC=190;      /* seconds of live audio kept in memory (16 kHz) for the live Help button */
+  var CHUNK_SEC=600;     /* a selection is transcribed in chunks of this length (keeps each upload small) */
+  var LLM_MODEL='qwen/qwen3.8-27b';
+
+  for(var b=0;b<N;b++){var el=document.createElement('i');beadsEl.appendChild(el);beads.push(el)}
+
+  function fmt(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
+  function setText(el,t){if(el._t!==t){el._t=t;el.textContent=t}}
+  function thr(inp){return 0.05-(+inp.value-1)*0.0045}
+  function toI16(v){v=v>1?1:v<-1?-1:v;return Math.round(v*(v<0?32768:32767))}
+  function showMsg(text,ms){
+    clearTimeout(msgTimer);
+    msg.textContent=text;
+    msg.style.opacity='1';
+    if(text) msgTimer=setTimeout(function(){
+      msg.style.opacity='0';
+      msgTimer=setTimeout(function(){msg.textContent='';msg.style.opacity='1'},300);
+    },ms||2500);
+  }
+  limit.addEventListener('input',function(){limVal.textContent=fmt(+limit.value)});
+  sens.addEventListener('input',function(){$('sensVal').textContent=sens.value});
+  $('ssens').addEventListener('input',function(){$('ssensVal').textContent=$('ssens').value});
+  $('rep').addEventListener('input',function(){$('repVal').textContent=$('rep').value+'s'});
+
+  /* colours are read from CSS, but not on every frame */
+  var cssC={}, cssT=0;
+  function css(n){
+    var t=Date.now();
+    if(t-cssT>1000){cssC={};cssT=t}
+    return cssC[n]||(cssC[n]=getComputedStyle(document.documentElement).getPropertyValue(n).trim());
+  }
+
+  /* ---------- session waveform ---------- */
+  var wc=$('wave'), wg=wc.getContext('2d'), BK=250, PER=1000/BK;
+  var peaks=[], speaks=[], flags=[], startT=0, lastWave=0, MAXV=1200, follow=true, wTot=60, viewSec=null, fullW=0;
+  var scrollAnchor=null, trimNotified=false, exporting=false, loading=false;
+  var spkStream=null, spkAn=null, spkBuf=null, spkUsed=false;
+  var activeSelection=null, selecting=null, markers=[];
+
+  function waveEnd(){return peaks.length/PER}
+  function updateSelectionInfo(){
+    var sel=activeSelection, txt='';
+    if(!running&&segs.length){
+      txt=sel?('Selected '+fmt(sel.start)+' to '+fmt(sel.end)+' ('+fmt(sel.end-sel.start)+'). Download it, transcribe it, or ask for help.')
+             :'Drag on the wave to select a section';
+    }
+    setText($('selInfo'),txt);
+    setText($('pdownload'),exporting?'Preparing MP3...':(sel?'Download selected':'Download'));
+  }
+  function getWaveTimeFromEvent(e){
+    var r=$('wcan').getBoundingClientRect();
+    var t=(Math.max(0,Math.min(r.width,e.clientX-r.left))/Math.max(1,r.width))*wTot;
+    return Math.min(t,waveEnd());
+  }
+  function rec_(now,rms,sp){
+    var i=Math.max(0,Math.floor((now-startT)/BK));
+    while(peaks.length<=i){peaks.push(0);speaks.push(0);flags.push(0)}
+    if(rms>peaks[i]) peaks[i]=rms;
+    if(sp>speaks[i]) speaks[i]=sp;
+    if(alerting) flags[i]=1;
+  }
+  function markNow(){return running?Math.max(0,(performance.now()-startT)/1000):(segs.length?pos():0)}
+  function mName(m,i){return m.label||('Marker '+(i+1))}
+  function renderMarkers(){
+    var box=$('mk'); box.innerHTML=''; box.hidden=!markers.length;
+    markers.forEach(function(m,i){
+      var c=document.createElement('span'); c.className='chip';
+      var a=document.createElement('button'); a.type='button'; a.textContent=mName(m,i)+' \u00b7 '+fmt(m.t);
+      a.setAttribute('aria-label','Go to '+mName(m,i));
+      a.addEventListener('click',function(){
+        var sc=$('wscroll'); follow=false;
+        sc.scrollLeft=Math.max(0,m.t/wTot*sc.scrollWidth-40);
+        if(!running&&segs.length) seekTo(m.t,isPlaying());
+      });
+      var e=document.createElement('button'); e.type='button'; e.className='x'; e.textContent='\u270e';
+      e.setAttribute('aria-label','Rename '+mName(m,i));
+      e.addEventListener('click',function(){editMarker(m,c)});
+      var x=document.createElement('button'); x.type='button'; x.className='x'; x.textContent='\u00d7';
+      x.setAttribute('aria-label','Remove '+mName(m,i));
+      x.addEventListener('click',function(){markers.splice(markers.indexOf(m),1);renderMarkers();drawWave()});
+      c.appendChild(a); c.appendChild(e); c.appendChild(x); box.appendChild(c);
+    });
+  }
+  function editMarker(m,chip){
+    chip.innerHTML='';
+    var inp=document.createElement('input'); inp.type='text'; inp.maxLength=24; inp.value=m.label||'';
+    inp.placeholder='Marker name'; inp.setAttribute('aria-label','Marker name');
+    var done=false;
+    function finish(save){
+      if(done) return; done=true;
+      if(save) m.label=inp.value.trim();
+      renderMarkers(); drawWave();
+    }
+    inp.addEventListener('keydown',function(ev){
+      if(ev.key==='Enter'){ev.preventDefault();finish(true)}
+      else if(ev.key==='Escape'){ev.preventDefault();finish(false)}
+    });
+    inp.addEventListener('blur',function(){finish(true)});
+    chip.appendChild(inp); inp.focus(); inp.select();
+  }
+  function addMarker(){
+    if(!running&&!segs.length){showMsg('Start listening first, then add markers.');return}
+    var t=markNow();
+    if(markers.some(function(m){return Math.abs(m.t-t)<0.5})){
+      showMsg('There is already a marker here');
+      view.markText='Already marked'; view.markUntil=Date.now()+1200;
+      draw(); setTimeout(draw,1300);
+      return;
+    }
+    var m={t:t,label:''}; markers.push(m); markers.sort(function(a,b){return a.t-b.t});
+    var n=markers.indexOf(m)+1;
+    renderMarkers(); showMsg('Marker '+n+' at '+fmt(t),1200);
+    view.markText='Marker '+n; view.markUntil=Date.now()+1200;
+    draw(); setTimeout(draw,1300);
+    drawWave();
+  }
+
+  /* Only the part of the wave that is on screen is drawn. The canvas is as wide as the viewport and
+     sticks to the left of the scroller, so memory and drawing cost no longer grow with the session. */
+  function drawWave(){
+    var sc=$('wscroll'), vw=sc.clientWidth;
+    if(!vw) return;
+    var elapsed=waveEnd(), tot=Math.max(60,elapsed);
+    var vis=viewSec?Math.min(viewSec,tot):(elapsed>MAXV?MAXV:tot);
+    vis=Math.min(tot,Math.max(vis,2));
+    var fw=Math.round(vw*tot/vis);
+    wTot=tot;
+    if(fw!==fullW){fullW=fw;$('wcan').style.width=fw+'px'}
+    if(scrollAnchor!==null){sc.scrollLeft=scrollAnchor/tot*fw;scrollAnchor=null}
+    else if(follow) sc.scrollLeft=fw;
+    var off=sc.scrollLeft;
+    var W=vw, H=wc.clientHeight||150, dpr=Math.min(3,window.devicePixelRatio||1);
+    var cw=Math.round(W*dpr), chh=Math.round(H*dpr);
+    if(wc.width!==cw||wc.height!==chh){wc.width=cw;wc.height=chh}
+    var wpx=W+'px'; if(wc.style.width!==wpx) wc.style.width=wpx;
+    wg.setTransform(dpr,0,0,dpr,0,0); wg.clearRect(0,0,W,H);
+    var ink=css('--ink'),yarn=css('--yarn'),coral=css('--coral'),lime=css('--lime');
+    var axisH=18, area=H-axisH, i, x, sx=fw/tot;
+    wg.fillStyle='rgba(143,160,200,.18)'; wg.fillRect(0,0,W,area);
+    var steps=[10,30,60,120,300,600,1800,3600], st=steps[steps.length-1];
+    for(i=0;i<steps.length;i++){if(steps[i]*sx>=70){st=steps[i];break}}
+    wg.font='12px "Patrick Hand","Segoe Print",cursive'; wg.textAlign='center'; wg.textBaseline='top';
+    var tA=off/sx, tB=(off+W)/sx;
+    for(var t=Math.max(st,Math.floor(tA/st)*st);t<tB&&t<tot;t+=st){
+      x=t*sx-off; wg.fillStyle=ink; wg.globalAlpha=.35; wg.fillRect(x,0,1,area+4);
+      wg.globalAlpha=.8; wg.fillText(fmt(t),Math.min(W-14,Math.max(14,x)),area+5);
+    }
+    wg.globalAlpha=1;
+    var ov=spkUsed&&$('ovl').checked, hh=area/2-3;
+    if(activeSelection){
+      var selLeft=Math.min(activeSelection.start,activeSelection.end)*sx-off;
+      var selRight=Math.max(activeSelection.start,activeSelection.end)*sx-off;
+      wg.fillStyle='rgba(239,91,76,.22)';
+      wg.fillRect(selLeft,0,Math.max(0,selRight-selLeft),area);
+      wg.strokeStyle='rgba(239,91,76,.9)';
+      wg.lineWidth=2;
+      wg.strokeRect(selLeft+1,1,Math.max(0,selRight-selLeft-2),area-2);
+    }
+    var tm=thr(sens), ts=thr($('ssens'));
+    var lanes=!spkUsed?[{a:peaks,t:tm,c:yarn,m:area/2,h:hh}]
+      :ov?[{a:speaks,t:ts,c:lime,m:area/2,h:hh},{a:peaks,t:tm,c:yarn,m:area/2,h:hh}]
+      :[{a:peaks,t:tm,c:yarn,m:area*.25,h:area*.25-3},{a:speaks,t:ts,c:lime,m:area*.75,h:area*.25-3}];
+    var end=elapsed*sx-off, endX=Math.max(0,Math.min(W,Math.ceil(end)));
+    wg.globalAlpha=ov?.8:1;
+    lanes.forEach(function(L){
+      for(x=0;x<endX;x++){
+        var i0=Math.floor((x+off)/sx*PER), i1=Math.max(i0,Math.ceil((x+1+off)/sx*PER)-1), p=0, fl=0;
+        for(i=i0;i<=i1&&i<L.a.length;i++){if(L.a[i]>p)p=L.a[i];if(flags[i])fl=1}
+        wg.fillStyle=fl?coral:L.c; wg.fillRect(x,L.m-.75,1,1.5);
+        if(p>L.t){
+          var h=Math.max(1.5,Math.pow(Math.min(1,(p-L.t)/(0.25-L.t)),.65)*L.h);
+          wg.fillRect(x,L.m-h,1,h*2);
+        }
+      }
+    });
+    wg.globalAlpha=1;
+    if(!ov&&spkUsed){
+      wg.fillStyle=ink; wg.globalAlpha=.25; wg.fillRect(0,area/2,W,1);
+      wg.globalAlpha=1;
+    }
+    markers.forEach(function(m,i){
+      var mx=m.t*sx-off, nm=m.label||String(i+1);
+      if(nm.length>14) nm=nm.slice(0,13)+'\u2026';
+      wg.font='bold 11px "Patrick Hand","Segoe Print",cursive';
+      var fw2=Math.max(14,wg.measureText(nm).width+10);
+      if(mx>W||mx+fw2<0) return;
+      wg.fillStyle='#d1388c'; wg.fillRect(mx-1,0,2,area);
+      wg.fillRect(mx-1,0,fw2,15);
+      wg.fillStyle='#fff'; wg.textAlign='left'; wg.textBaseline='middle';
+      wg.fillText(nm,mx+4,8);
+    });
+    var ly=$('lyou'), ls=$('lspk');
+    ly.hidden=ls.hidden=!spkUsed;
+    ly.style.top='3px'; ls.style.top=(ov?3:area/2+3)+'px'; ls.style.left=ov?'50px':'6px';
+    if(end>=0&&end<=W+2){wg.fillStyle=ink; wg.fillRect(Math.min(W-2,end),0,2,area)}
+    syncBar();
+    setText($('wtime'),fmt(elapsed));
+    updateSelectionInfo();
+    updPlayer();
+  }
+  var rafW=0;
+  function schedWave(){if(rafW) return; rafW=requestAnimationFrame(function(){rafW=0;drawWave()})}
+  window.addEventListener('resize',drawWave);
+  $('wscroll').addEventListener('scroll',function(){var e=$('wscroll');follow=e.scrollWidth-e.clientWidth-e.scrollLeft<30;syncBar();schedWave()});
+  var wbar=$('wbar'), wthumb=$('wthumb'), drag=null;
+  function syncBar(){
+    var sc=$('wscroll'), sw=sc.scrollWidth, bw=wbar.clientWidth;
+    if(!sw||!bw) return;
+    var th=Math.max(30,bw*sc.clientWidth/sw);
+    wthumb.style.width=th+'px';
+    wthumb.style.left=Math.max(0,Math.min(bw-th,sc.scrollLeft/sw*bw))+'px';
+  }
+  wthumb.addEventListener('pointerdown',function(e){
+    var sc=$('wscroll'), sw=sc.scrollWidth, c=e.target.classList;
+    drag={m:c.contains('l')?'l':c.contains('r')?'r':'m', x:e.clientX, l:sc.scrollLeft,
+          t0:sc.scrollLeft/sw*wTot, t1:(sc.scrollLeft+sc.clientWidth)/sw*wTot};
+    wthumb.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  wthumb.addEventListener('pointermove',function(e){
+    if(!drag) return;
+    var sc=$('wscroll'), bw=wbar.clientWidth;
+    if(drag.m==='m'){sc.scrollLeft=drag.l+(e.clientX-drag.x)*sc.scrollWidth/bw;return}
+    var t=(e.clientX-wbar.getBoundingClientRect().left-wbar.clientLeft)/bw*wTot;
+    t=Math.max(0,Math.min(wTot,t));
+    var a=drag.t0, b=drag.t1;
+    if(drag.m==='l') a=Math.min(t,b-2); else b=Math.max(t,a+2);
+    viewSec=(b-a>=wTot-.01)?null:(b-a);
+    follow=false; scrollAnchor=a; drawWave();
+  });
+  wthumb.addEventListener('pointerup',function(){drag=null});
+  wthumb.addEventListener('pointercancel',function(){drag=null});
+  wbar.addEventListener('dblclick',function(){viewSec=null;drawWave()});
+  wbar.addEventListener('pointerdown',function(e){
+    if(e.target===wthumb||wthumb.contains(e.target)) return;
+    var sc=$('wscroll'), r=wbar.getBoundingClientRect();
+    sc.scrollLeft=(e.clientX-r.left)/r.width*sc.scrollWidth-sc.clientWidth/2;
+  });
+
+  /* ---------- recording ----------
+     The recording is cut into segments of about ROT_SEC seconds. Each segment is a standalone file, so
+     once the session is longer than MAX_SEC the oldest segments are simply thrown away. Every segment is
+     recorded twice: a mixed file for playback/download, and a stereo file (you left, speaker right)
+     that is only used to transcribe the two sides separately. */
+  var rec=null, recDest=null, splitDest=null, merger=null, micSrc=null, spkSrc=null, segs=[], pending=[];
+  function nowW(){return peaks.length/PER}
+  function pickMime(){
+    return ['audio/webm;codecs=opus','audio/webm','audio/mp4'].filter(function(m){return MediaRecorder.isTypeSupported(m)})[0];
+  }
+  function mkRec(stream,bps){
+    var mt=pickMime(), opts={}, chunks=[];
+    if(mt) opts.mimeType=mt;
+    opts.audioBitsPerSecond=bps;
+    var mr=new MediaRecorder(stream,opts);
+    var done=new Promise(function(res){
+      mr.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data)};
+      mr.onstop=function(){res(chunks.length?new Blob(chunks,{type:mr.mimeType||mt||'audio/webm'}):null);chunks=[]};
+      mr.onerror=function(){res(null)};
+    });
+    mr.start(1000);
+    return {done:done,stop:function(){try{if(mr.state!=='inactive')mr.stop()}catch(e){}}};
+  }
+  function newSeg(){
+    var s={start:nowW(),end:0,discard:false,mix:null,split:null};
+    s.mix=mkRec(recDest.stream,64000);
+    if(splitDest){try{s.split=mkRec(splitDest.stream,40000)}catch(e){s.split=null}}
+    return s;
+  }
+  function closeSeg(s){
+    s.end=nowW();
+    s.mix.stop(); if(s.split) s.split.stop();
+    pending.push(s);
+    Promise.all([s.mix.done,s.split?s.split.done:null]).then(function(r){
+      var i=pending.indexOf(s); if(i>=0) pending.splice(i,1);
+      if(s.discard||!r[0]||s.end<=s.start||s.end<=0) return;
+      segs.push({blob:r[0],url:URL.createObjectURL(r[0]),start:s.start,dur:s.end-s.start,split:r[1]||null});
+      segs.sort(function(a,b){return a.start-b.start});
+      updPlayer(); updateSelectionInfo();
+    });
+  }
+  function startRec(){
+    if(!window.MediaRecorder||!ctx||!ctx.createMediaStreamDestination){showMsg('Recording is not supported here, the wave still works.');return}
+    try{
+      recDest=ctx.createMediaStreamDestination();
+      splitDest=ctx.createMediaStreamDestination();
+      splitDest.channelCount=2; splitDest.channelCountMode='explicit'; splitDest.channelInterpretation='discrete';
+      merger=ctx.createChannelMerger(2); merger.connect(splitDest);
+      micSrc.connect(recDest); micSrc.connect(merger,0,0);
+      if(spkSrc){spkSrc.connect(recDest); spkSrc.connect(merger,0,1)}
+      rec=newSeg();
+    }catch(e){
+      rec=null; unwireRec();
+      showMsg('Recording is not supported here, the wave still works.');
+    }
+  }
+  function rotateRec(){
+    if(!rec||!recDest) return;
+    var old=rec;
+    try{rec=newSeg()}catch(e){rec=null}
+    closeSeg(old);
+  }
+  function unwireRec(){
+    [[micSrc,recDest],[micSrc,merger],[spkSrc,recDest],[spkSrc,merger]].forEach(function(p){
+      if(p[0]&&p[1]){try{p[0].disconnect(p[1])}catch(e){}}
+    });
+    if(merger){try{merger.disconnect()}catch(e){}}
+    recDest=splitDest=merger=null;
+  }
+  function stopRec(){
+    if(rec){closeSeg(rec);rec=null}
+    unwireRec();
+  }
+
+  /* Keeps only the newest MAX_SEC seconds: drops old wave data, markers and whole old segments, and
+     moves everything else back in time so the timeline starts at 0:00 again. */
+  function trimWindow(){
+    var cutIdx=Math.floor((waveEnd()-MAX_SEC)*PER);
+    if(cutIdx<=0) return;
+    var cut=cutIdx/PER, sc=$('wscroll');
+    if(!follow&&sc.scrollWidth) scrollAnchor=sc.scrollLeft/sc.scrollWidth*wTot-cut;
+    peaks.splice(0,cutIdx); speaks.splice(0,cutIdx); flags.splice(0,cutIdx);
+    startT+=cutIdx*BK;
+    segs.forEach(function(s){s.start-=cut});
+    pending.forEach(function(s){s.start-=cut;s.end-=cut});
+    if(rec) rec.start-=cut;
+    while(segs.length&&segs[0].start+segs[0].dur<=0){URL.revokeObjectURL(segs[0].url);segs.shift()}
+    markers=markers.filter(function(m){return m.t>=cut}).map(function(m){return {t:m.t-cut,label:m.label}});
+    if(activeSelection){
+      activeSelection={start:Math.max(0,activeSelection.start-cut),end:Math.max(0,activeSelection.end-cut)};
+      if(activeSelection.end<=0) activeSelection=null;
+    }
+    renderMarkers();
+    if(!trimNotified){trimNotified=true;showMsg('60 minute limit reached: the oldest audio is now being dropped.',4000)}
+  }
+  function maintain(){
+    if(rec&&nowW()-rec.start>=ROT_SEC) rotateRec();
+    if(waveEnd()>MAX_SEC+TRIM_STEP) trimWindow();
+  }
+
+  /* ---------- player ---------- */
+  var au=new Audio(), curSeg=-1, pend=0, wantPlay=false, rates=[1,1.5,2,.75], ri=0, looping=false;
+  au.preload='auto';
+  function total(){var s=segs[segs.length-1];return s?s.start+s.dur:0}
+  function pos(){return curSeg<0||!segs[curSeg]?0:Math.min(segs[curSeg].start+au.currentTime,total())}
+  function isPlaying(){return wantPlay&&!au.paused}
+  function ready(){
+    try{au.currentTime=pend}catch(e){}
+    au.playbackRate=rates[ri];
+    if(wantPlay) au.play().catch(function(){});
+  }
+  au.addEventListener('loadedmetadata',function(){
+    if(au.duration===Infinity||isNaN(au.duration)){
+      var f=function(){au.removeEventListener('timeupdate',f);ready()};
+      au.addEventListener('timeupdate',f);
+      au.currentTime=1e101;
+    }else ready();
+  });
+  function seekTo(t,play){
+    if(!segs.length) return;
+    t=Math.max(0,Math.min(t,total()));
+    var i=segs.length-1;
+    for(var k=0;k<segs.length;k++){if(t<segs[k].start+segs[k].dur){i=k;break}}
+    var off=Math.max(0,t-segs[i].start);
+    wantPlay=play;
+    if(i!==curSeg){curSeg=i;pend=off;au.src=segs[i].url}
+    else{
+      try{au.currentTime=off}catch(e){}
+      if(play) au.play().catch(function(){}); else au.pause();
+    }
+    updPlayer();
+  }
+  function checkSel(){
+    if(activeSelection&&!running&&pos()>=activeSelection.end-.03) seekTo(activeSelection.start,true);
+  }
+  function loop(){
+    if(au.paused){looping=false;updPlayer();return}
+    looping=true; checkSel(); updPlayer();
+    requestAnimationFrame(loop);
+  }
+  au.addEventListener('play',function(){if(!looping) loop()});
+  au.addEventListener('pause',updPlayer);
+  au.addEventListener('seeked',updPlayer);
+  au.addEventListener('timeupdate',checkSel);
+  au.addEventListener('ended',function(){
+    if(activeSelection&&curSeg<segs.length-1&&segs[curSeg+1].start>=activeSelection.end){
+      seekTo(activeSelection.start,true);
+      return;
+    }
+    if(curSeg<segs.length-1) seekTo(segs[curSeg+1].start,true);
+    else if(activeSelection) seekTo(activeSelection.start,true);
+    else{wantPlay=false;updPlayer()}
+  });
+  function syncActions(){
+    var paused=!running&&segs.length>0;
+    $('trbtn').hidden=!paused;
+    setText($('help'),paused?'Help with selection (H)':'Help me collect (H)');
+  }
+  function updPlayer(){
+    var has=segs.length>0, playing=isPlaying();
+    $('pl').hidden=!has;
+    $('wcan').classList.toggle('seek',has&&!running);
+    ['pback','pplay','pfwd','prate'].forEach(function(id){$(id).disabled=running});
+    $('pdownload').disabled=running||exporting;
+    $('pplay').innerHTML=playing?'&#10074;&#10074;':'&#9654;';
+    $('pplay').setAttribute('aria-label',playing?'Pause':'Play');
+    var t=has?pos():0;
+    setText($('ptime'),fmt(t)+' / '+fmt(total()));
+    var ph=$('phead');
+    if(has&&!running){
+      var x=t/wTot*$('wcan').clientWidth;
+      ph.style.display='block'; ph.style.left=x+'px';
+      if(playing){var sc=$('wscroll');if(x<sc.scrollLeft||x>sc.scrollLeft+sc.clientWidth-30) sc.scrollLeft=Math.max(0,x-40)}
+    }else ph.style.display='none';
+    syncActions();
+  }
+  $('pplay').addEventListener('click',function(){
+    if(ctx&&ctx.state==='suspended'){try{ctx.resume()}catch(e){}}
+    if(isPlaying()){au.pause();wantPlay=false;updPlayer();return}
+    var t=pos(); if(au.ended||curSeg<0||t>=total()-.2) t=activeSelection?activeSelection.start:0;
+    seekTo(t,true);
+  });
+  $('pback').addEventListener('click',function(){seekTo(pos()-10,isPlaying())});
+  $('pfwd').addEventListener('click',function(){seekTo(pos()+10,isPlaying())});
+  $('prate').addEventListener('click',function(){
+    ri=(ri+1)%rates.length; au.playbackRate=rates[ri];
+    $('prate').textContent=rates[ri]+'\u00d7';
+  });
+
+  /* ---------- download (MP3) ----------
+     Segments are decoded and encoded one at a time, so even an hour of audio never sits decoded in memory. */
+  var mp3EncoderPromise=null;
+  function loadMp3Encoder(){
+    if(window.lamejs) return Promise.resolve(window.lamejs);
+    if(!mp3EncoderPromise){
+      mp3EncoderPromise=new Promise(function(resolve,reject){
+        var script=document.createElement('script');
+        script.src='https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js';
+        script.integrity='sha384-xuasJXVcyv3hZq0eYpelEkBC8l4yufatZXDsKuyCU2rqfhDCb+ftuE/mSfZAteiK';
+        script.crossOrigin='anonymous';
+        script.onload=function(){
+          if(window.lamejs) resolve(window.lamejs);
+          else{mp3EncoderPromise=null;reject(new Error('The MP3 encoder did not load.'))}
+        };
+        script.onerror=function(){mp3EncoderPromise=null;reject(new Error('Could not load the MP3 encoder. Check your internet connection and try again.'))};
+        document.head.appendChild(script);
+      });
+    }
+    return mp3EncoderPromise;
+  }
+  $('pdownload').addEventListener('click',async function(){
+    if(exporting||running) return;
+    var selection=activeSelection?{start:Math.min(activeSelection.start,activeSelection.end),end:Math.max(activeSelection.start,activeSelection.end)}:null;
+    var startAt=selection?selection.start:0;
+    var endAt=selection?selection.end:total();
+    if(endAt-startAt<0.2){
+      showMsg(selection?'Choose a wider section to download.':'Nothing recorded yet.');
+      return;
+    }
+    exporting=true; updateSelectionInfo(); updPlayer(); showMsg('');
+    try{
+      var lib=await loadMp3Encoder(), rate=44100, enc=new lib.Mp3Encoder(2,rate,128), out=[], cursor=0, any=false;
+      var snap=segs.slice(), totalSamples=Math.round((endAt-startAt)*rate);
+      var feed=function(l,r){var e=enc.encodeBuffer(l,r); if(e.length) out.push(new Uint8Array(e))};
+      var silence=function(n){while(n>0){var k=Math.min(n,rate),z=new Int16Array(k);feed(z,z);n-=k}};
+      for(var i=0;i<snap.length;i++){
+        var s=snap[i];
+        if(s.start>=endAt||s.start+s.dur+2<=startAt) continue;
+        var b=await ctx.decodeAudioData(await s.blob.arrayBuffer());
+        var from=Math.max(s.start,startAt), to=Math.min(s.start+b.duration,endAt);
+        if(to<=from) continue;
+        var o0=Math.max(cursor,Math.round((from-startAt)*rate)), o1=Math.min(totalSamples,Math.round((to-startAt)*rate));
+        if(o1<=o0) continue;
+        silence(o0-cursor);
+        any=true;
+        var ld=b.getChannelData(0), rd=b.numberOfChannels>1?b.getChannelData(1):ld, sr=b.sampleRate;
+        for(var p=o0;p<o1;p+=8192){
+          var n=Math.min(8192,o1-p), L=new Int16Array(n), R=new Int16Array(n);
+          for(var f=0;f<n;f++){
+            var ps=Math.min(b.length-1,((startAt+(p+f)/rate)-s.start)*sr), idx=Math.floor(ps), nx=Math.min(idx+1,b.length-1), fr=ps-idx;
+            L[f]=toI16(ld[idx]+(ld[nx]-ld[idx])*fr);
+            R[f]=toI16(rd[idx]+(rd[nx]-rd[idx])*fr);
+          }
+          feed(L,R);
+        }
+        cursor=o1;
+      }
+      if(!any){showMsg('No audio was captured in the selected range.');return}
+      if(totalSamples>cursor) silence(totalSamples-cursor);
+      var tail=enc.flush();
+      if(tail.length) out.push(new Uint8Array(tail));
+      var link=document.createElement('a');
+      link.href=URL.createObjectURL(new Blob(out,{type:'audio/mpeg'}));
+      link.download=selection?'silence-reminder-selection.mp3':'silence-reminder-recording.mp3'; link.click();
+      setTimeout(function(){URL.revokeObjectURL(link.href)},30000);
+      showMsg(selection?'Selected section downloaded.':'Recording downloaded.');
+    }catch(e){
+      showMsg('Could not create the download: '+((e&&e.message)||e),5000);
+    }finally{
+      exporting=false; updateSelectionInfo(); updPlayer();
+    }
+  });
+
+  /* ---------- selecting a section (while paused) ---------- */
+  $('wcan').addEventListener('pointerdown',function(e){
+    if(running||!segs.length) return;
+    selecting={x:e.clientX,t:getWaveTimeFromEvent(e),drag:false};
+    $('wcan').setPointerCapture(e.pointerId);
+  });
+  $('wcan').addEventListener('pointermove',function(e){
+    if(!selecting||running) return;
+    if(!selecting.drag&&Math.abs(e.clientX-selecting.x)>5) selecting.drag=true;
+    if(selecting.drag){
+      var cur=getWaveTimeFromEvent(e);
+      activeSelection={start:Math.min(selecting.t,cur),end:Math.max(selecting.t,cur)};
+      drawWave();
+    }
+  });
+  function finishSelection(e){
+    if(!selecting||running){selecting=null;return}
+    if(!selecting.drag){
+      var t=getWaveTimeFromEvent(e||{clientX:selecting.x});
+      activeSelection=null;
+      seekTo(t,isPlaying());
+    }else if(!activeSelection||activeSelection.end-activeSelection.start<0.5){
+      activeSelection={start:selecting.t,end:Math.min(waveEnd(),selecting.t+0.5)};
+    }
+    selecting=null;
+    drawWave();
+    if(activeSelection) seekTo(activeSelection.start,true);
+  }
+  $('wcan').addEventListener('pointerup',finishSelection);
+  $('wcan').addEventListener('pointercancel',finishSelection);
+  function dropRec(){
+    activeSelection=null; selecting=null;
+    au.pause(); wantPlay=false; curSeg=-1;
+    au.removeAttribute('src'); try{au.load()}catch(e){}
+    segs.forEach(function(s){URL.revokeObjectURL(s.url)});
+    segs=[];
+    updateSelectionInfo();
+  }
+
+  /* ---------- floating window (picture-in-picture) ---------- */
+  var cv=document.createElement('canvas'); cv.width=400; cv.height=400;
+  var g=cv.getContext('2d');
+  var vid=document.createElement('video');
+  vid.muted=true; vid.setAttribute('playsinline','');
+  vid.style.cssText='position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none';
+  document.body.appendChild(vid);
+  var pipOk=!!(document.pictureInPictureEnabled && vid.requestPictureInPicture && cv.captureStream);
+  if(!pipOk){pipBtn.hidden=true}
+  var view={silent:0,frac:0,text:'Not listening',alert:false};
+
+  function draw(){
+    var mat=css('--mat'),paper=css('--paper'),ink=css('--ink'),yarn=css('--yarn'),coral=css('--coral'),blush=css('--blush');
+    var flash=view.alert && (Math.floor(Date.now()/500)%2===0);
+    g.setLineDash([]); g.globalAlpha=1;
+    g.fillStyle=flash?coral:mat; g.fillRect(0,0,400,400);
+    g.beginPath(); g.arc(200,200,190,0,7); g.fillStyle=view.alert?blush:paper; g.fill();
+    g.lineCap='round';
+    g.beginPath(); g.arc(200,200,150,0,7); g.strokeStyle=ink; g.globalAlpha=.3; g.lineWidth=5; g.setLineDash([10,12]); g.stroke();
+    g.setLineDash([]); g.globalAlpha=1;
+    if(view.frac<0.995){
+      g.beginPath(); g.lineWidth=26; g.strokeStyle=view.alert?coral:yarn;
+      g.arc(200,200,150,-Math.PI/2+view.frac*2*Math.PI,1.5*Math.PI); g.stroke();
+    }
+    g.fillStyle=view.alert?coral:ink; g.textAlign='center'; g.textBaseline='middle';
+    g.font='120px "Caveat Brush","Segoe Print","Comic Sans MS",cursive';
+    g.fillText(fmt(view.silent),200,190);
+    g.font='36px "Patrick Hand","Segoe Print","Comic Sans MS",cursive';
+    g.fillText(view.text,200,268);
+    if(view.markUntil>Date.now()){
+      g.fillStyle='#d1388c'; g.beginPath(); g.roundRect?g.roundRect(100,52,200,52,26):g.rect(100,52,200,52); g.fill();
+      g.fillStyle='#fff'; g.font='34px "Patrick Hand","Segoe Print","Comic Sans MS",cursive';
+      g.fillText(view.markText,200,79);
+    }
+    if(ansState&&ansState.until>Date.now()){
+      g.setLineDash([]); g.fillStyle=paper; g.strokeStyle=ink; g.lineWidth=4; g.globalAlpha=.97;
+      g.beginPath(); if(g.roundRect) g.roundRect(14,14,372,372,24); else g.rect(14,14,372,372);
+      g.fill(); g.stroke(); g.globalAlpha=1;
+      g.fillStyle=ink; g.textAlign='left'; g.textBaseline='top';
+      g.font=ansState.size+'px "Patrick Hand","Segoe Print","Comic Sans MS",cursive';
+      ansState.lines.forEach(function(l,i){g.fillText(l,30,32+i*ansState.size*1.25)});
+    }
+  }
+
+  function prepVideo(){
+    if(!pipOk) return Promise.resolve();
+    draw();
+    if(!vid.srcObject){vid.srcObject=cv.captureStream(15)}
+    return vid.play();
+  }
+  async function openPip(){
+    try{ await prepVideo(); await vid.requestPictureInPicture(); }
+    catch(e){ showMsg('Your browser would not open the floating window.'); }
+  }
+  pipBtn.addEventListener('click',function(){
+    if(document.pictureInPictureElement===vid){document.exitPictureInPicture().catch(function(){})}
+    else{openPip()}
+  });
+  vid.addEventListener('enterpictureinpicture',function(){pipBtn.textContent='Close floating timer'});
+  vid.addEventListener('leavepictureinpicture',function(){pipBtn.textContent='Float on top'});
+
+  /* ---------- listening ---------- */
+  var ringV=-1;
+  function setRing(frac){
+    frac=Math.round(frac*1000)/1000;
+    if(frac===ringV) return;
+    ringV=frac;
+    var off=100*frac;
+    prog.style.strokeDashoffset=off; fluff.style.strokeDashoffset=off;
+    var vis=frac>=0.995?0:1;
+    prog.style.opacity=vis; fluff.style.opacity=vis?'':0;
+  }
+
+  function beep(){
+    try{
+      if(ctx.state==='suspended'){ctx.resume()}
+      [0,0.35,0.7].forEach(function(d){
+        var c=ctx, o=c.createOscillator(), gn=c.createGain(), t=c.currentTime+d;
+        o.type='sine'; o.frequency.value=740;
+        gn.gain.setValueAtTime(0.0001,t);
+        gn.gain.exponentialRampToValueAtTime(0.4,t+0.04);
+        gn.gain.exponentialRampToValueAtTime(0.0001,t+0.28);
+        o.connect(gn); gn.connect(c.destination); o.start(t); o.stop(t+0.3);
+      });
+    }catch(e){}
+  }
+  function remind(){
+    beep();
+    if(navigator.vibrate){try{navigator.vibrate([200,100,200])}catch(e){}}
+    if(window.Notification && Notification.permission==='granted' && document.hidden){
+      try{new Notification('Keep talking',{body:'You have been silent too long.'})}catch(e){}
+    }
+    document.title='Keep talking!';
+  }
+
+  function analyze(now){
+    analyser.getByteTimeDomainData(buf);
+    var sum=0;
+    for(var i=0;i<buf.length;i++){var v=(buf[i]-128)/128;sum+=v*v}
+    var rms=Math.sqrt(sum/buf.length);
+    var threshold=thr(sens), sthr=thr($('ssens'));
+    var n=Math.round(Math.min(1,rms/0.15)*N);
+    if(!document.hidden){for(var k=0;k<N;k++){beads[k].classList.toggle('on',k<n)}}
+    var sp=0;
+    if(spkAn){spkAn.getByteTimeDomainData(spkBuf);var s2=0;for(var j=0;j<spkBuf.length;j++){var w=(spkBuf[j]-128)/128;s2+=w*w}sp=Math.sqrt(s2/spkBuf.length)}
+    rec_(now,rms,sp);
+    if(rms>threshold||($('incl').checked&&sp>sthr)){
+      lastSound=now;
+      if(alerting){alerting=false;dial.classList.remove('alert');view.alert=false;document.title='Keep talking'}
+    }
+  }
+
+  function update(now){
+    var silent=(now-lastSound)/1000, lim=+limit.value, frac=Math.min(1,silent/lim), text;
+    if(silent>=lim){
+      if(!alerting){alerting=true;lastAlert=now;dial.classList.add('alert');remind()}
+      else if(now-lastAlert>=(+$('rep').value)*1000){lastAlert=now;remind()}
+      text='Say something!';
+    }else{
+      text=silent<2?'Hearing you':'Of silence';
+    }
+    view.silent=silent; view.frac=frac; view.text=text; view.alert=alerting;
+    setText(timeEl,fmt(silent)); setText(stateEl,text); setRing(frac);
+    if(now-lastDraw>=60){lastDraw=now;draw()}
+    if(!document.hidden && now-lastWave>100){lastWave=now;drawWave()}
+  }
+
+  function step(){
+    if(!running) return;
+    var now=performance.now();
+    if(now-lastRun<30) return;
+    lastRun=now;
+    analyze(now); update(now); maintain();
+  }
+
+  async function start(){
+    if(starting||running) return;
+    starting=true;
+    try{
+      au.pause(); wantPlay=false; curSeg=-1;
+      au.removeAttribute('src'); try{au.load()}catch(e){}
+      activeSelection=null; selecting=null;
+      showMsg('');
+      if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+        showMsg('This browser does not support microphone access.');return;
+      }
+      try{
+        stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false}});
+      }catch(e){
+        showMsg('Mic blocked. Allow it in your browser settings, or open this page in its own tab.',5000);
+        return;
+      }
+      var AC=window.AudioContext||window.webkitAudioContext;
+      if(!ctx||ctx.state==='closed') ctx=new AC();
+      if(ctx.state==='suspended'){try{await ctx.resume()}catch(e){}}
+      var src=micSrc=ctx.createMediaStreamSource(stream);
+      analyser=ctx.createAnalyser(); analyser.fftSize=4096;
+      buf=new Uint8Array(analyser.fftSize);
+      src.connect(analyser);
+      running=true; alerting=false; lastSound=performance.now();
+      follow=true; startT=lastSound-peaks.length*BK;
+      startRec(); capStart().catch(function(){}); updPlayer();
+      btn.textContent='Stop listening'; btn.classList.add('stop');
+      if(window.Notification && Notification.permission==='default'){try{Notification.requestPermission()}catch(e){}}
+      try{if(navigator.wakeLock){wakeLock=await navigator.wakeLock.request('screen')}}catch(e){}
+      tick=setInterval(step,50);
+      try{
+        workerUrl=URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},50)'],{type:'application/javascript'}));
+        worker=new Worker(workerUrl); worker.onmessage=step; worker.onerror=function(){};
+      }catch(e){}
+      prepVideo().catch(function(){});
+      try{navigator.mediaSession.setActionHandler('enterpictureinpicture',function(){openPip()})}catch(e){}
+      step();
+    }finally{
+      starting=false;
+    }
+  }
+
+  function stop(){
+    stopRec(); capStop(); running=false;
+    if(tick){clearInterval(tick);tick=null}
+    if(worker){worker.terminate();worker=null}
+    if(workerUrl){URL.revokeObjectURL(workerUrl);workerUrl=null}
+    if(micSrc){try{micSrc.disconnect()}catch(e){} micSrc=null}
+    if(analyser){try{analyser.disconnect()}catch(e){} analyser=null}
+    if(stream){stream.getTracks().forEach(function(t){t.stop()}); stream=null}
+    if(wakeLock){try{wakeLock.release()}catch(e){} wakeLock=null}
+    dial.classList.remove('alert'); document.title='Keep talking';
+    btn.textContent='Start listening'; btn.classList.remove('stop');
+    setText(stateEl,'Not listening'); setText(timeEl,'0:00');
+    setRing(0);
+    beads.forEach(function(x){x.classList.remove('on')});
+    view={silent:0,frac:0,text:'Not listening',alert:false}; draw();
+    drawWave();
+  }
+
+  var spkBtn=$('spk');
+  async function startSpk(){
+    showMsg('');
+    if(!running){showMsg('Start listening first, then add speaker sound.');return}
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia){showMsg('This browser cannot capture speaker sound.');return}
+    var ds;
+    try{ds=await navigator.mediaDevices.getDisplayMedia({video:{width:1,height:1,frameRate:1},audio:true})}
+    catch(e){showMsg('Sharing was cancelled.');return}
+    if(!ds.getAudioTracks().length){
+      ds.getTracks().forEach(function(t){t.stop()});
+      showMsg('No audio shared. Pick a tab (or screen) and tick "Share audio".',5000);return;
+    }
+    if(!running){ds.getTracks().forEach(function(t){t.stop()});return}
+    ds.getVideoTracks().forEach(function(t){t.stop()});
+    spkStream=ds;
+    var src=ctx.createMediaStreamSource(new MediaStream(ds.getAudioTracks()));
+    spkAn=ctx.createAnalyser(); spkAn.fftSize=4096; spkBuf=new Uint8Array(spkAn.fftSize);
+    spkSrc=src;
+    if(recDest) src.connect(recDest);
+    if(merger) src.connect(merger,0,1);
+    if(cap.spk&&cap.spk.mix) src.connect(cap.spk.mix);
+    src.connect(spkAn);
+    spkUsed=true; spkBtn.textContent='Remove speaker sound';
+    ds.getAudioTracks()[0].addEventListener('ended',stopSpk);
+  }
+  function stopSpk(){
+    if(spkStream){spkStream.getTracks().forEach(function(t){t.stop()});spkStream=null}
+    if(spkSrc){try{spkSrc.disconnect()}catch(e){} spkSrc=null}
+    spkAn=null; spkBuf=null; spkBtn.textContent='Add speaker sound';
+  }
+  spkBtn.addEventListener('click',function(){spkAn?stopSpk():startSpk()});
+  btn.addEventListener('click',function(){running?stop():start()});
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden && running && navigator.wakeLock && !wakeLock){
+      navigator.wakeLock.request('screen').then(function(w){wakeLock=w}).catch(function(){});
+    }
+    if(!document.hidden) drawWave();
+  });
+  function clearWave(){
+    dropRec();
+    pending.forEach(function(s){s.discard=true});
+    if(rec){rec.discard=true;closeSeg(rec);rec=null}
+    peaks=[]; speaks=[]; flags=[]; spkUsed=!!spkAn; follow=true; markers=[]; renderMarkers(); trimNotified=false;
+    [cap.mic,cap.spk].forEach(function(l){if(l){l.chunks=[];l.n=0}});
+    if(running){
+      startT=performance.now();
+      try{if(recDest) rec=newSeg()}catch(e){rec=null}
+    }
+    $('wscroll').scrollLeft=0; drawWave();
+  }
+  $('clr').addEventListener('click',clearWave);
+  $('mark').addEventListener('click',addMarker);
+  document.addEventListener('keydown',function(e){
+    if((e.key==='m'||e.key==='M')&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&!/^(INPUT|TEXTAREA|SELECT)$/.test((e.target&&e.target.tagName)||'')){
+      e.preventDefault(); addMarker();
+    }
+  });
+  /* the floating window's "next track" button drops a marker */
+  try{
+    navigator.mediaSession.setActionHandler('nexttrack',addMarker);
+    var ms=navigator.mediaSession;
+    var clr=function(){clearWave();view.markText='Cleared';view.markUntil=Date.now()+1200;draw();setTimeout(draw,1300)};
+    ms.setActionHandler('hangup',clr);
+    ms.setActionHandler('togglemicrophone',function(){
+      if(!$('ans').hidden){
+        $('ans').hidden=true;
+        if(ansState) ansState.until=0;
+        draw();
+      }else help();
+    });
+    try{ms.setActionHandler('togglecamera',addMarker)}catch(e){}
+    navigator.mediaSession.metadata=new MediaMetadata({title:'Silence Reminder',artist:'Previous = ask for help, Next = add marker'});
+  }catch(e){}
+
+  /* ---------- rolling capture for live help ----------
+     Only the last LIVE_SEC seconds are kept, already reduced to 16 kHz 16-bit mono (about 6 MB per lane). */
+  var cap={mic:null,spk:null,mute:null,rate:48000,loaded:false}, capSeq=0;
+  var ansState=null, helping=false;
+  function capPush(lane,f){
+    var ratio=cap.rate/16000, d=lane.dec, out=new Int16Array(Math.ceil(f.length/ratio)+1), k=0;
+    for(var i=0;i<f.length;i++){
+      d.acc+=f[i]; d.cnt++; d.pos+=1;
+      if(d.pos>=ratio){out[k++]=toI16(d.acc/d.cnt); d.pos-=ratio; d.acc=0; d.cnt=0}
+    }
+    if(!k) return;
+    lane.chunks.push(k===out.length?out:out.slice(0,k)); lane.n+=k;
+    var max=16000*LIVE_SEC;
+    while(lane.chunks.length>1&&lane.n-lane.chunks[0].length>=max) lane.n-=lane.chunks.shift().length;
+  }
+  function mkLane(mute){
+    var lane={mix:ctx.createGain(),node:null,chunks:[],n:0,dec:{acc:0,cnt:0,pos:0}};
+    try{
+      if(!ctx.audioWorklet||!cap.loaded) throw 0;
+      lane.node=new AudioWorkletNode(ctx,'cap');
+      lane.node.port.onmessage=function(e){capPush(lane,e.data)};
+    }catch(e){
+      lane.node=ctx.createScriptProcessor(4096,1,1);
+      lane.node.onaudioprocess=function(e){capPush(lane,e.inputBuffer.getChannelData(0))};
+    }
+    lane.mix.connect(lane.node); lane.node.connect(mute);
+    return lane;
+  }
+  async function capStart(){
+    var my=++capSeq;
+    cap.rate=ctx.sampleRate;
+    var mute=ctx.createGain(); mute.gain.value=0; mute.connect(ctx.destination); cap.mute=mute;
+    try{
+      if(ctx.audioWorklet&&!cap.loaded){
+        var code='class C extends AudioWorkletProcessor{constructor(){super();this.b=new Float32Array(4096);this.i=0}process(inp){var c=inp[0]&&inp[0][0];if(c){for(var k=0;k<c.length;k++){this.b[this.i++]=c[k];if(this.i===4096){this.port.postMessage(this.b);this.b=new Float32Array(4096);this.i=0}}}return true}}registerProcessor("cap",C)';
+        var u=URL.createObjectURL(new Blob([code],{type:'application/javascript'}));
+        try{await ctx.audioWorklet.addModule(u);cap.loaded=true}finally{URL.revokeObjectURL(u)}
+      }
+    }catch(e){}
+    if(my!==capSeq||!running||!micSrc){try{mute.disconnect()}catch(e){} if(cap.mute===mute) cap.mute=null; return}
+    cap.mic=mkLane(mute); cap.spk=mkLane(mute);
+    micSrc.connect(cap.mic.mix);
+    if(spkSrc) spkSrc.connect(cap.spk.mix);
+  }
+  function capStop(){
+    capSeq++;
+    [[cap.mic,micSrc],[cap.spk,spkSrc]].forEach(function(p){
+      var l=p[0];
+      if(!l) return;
+      if(p[1]){try{p[1].disconnect(l.mix)}catch(e){}}
+      try{l.node.disconnect()}catch(e){}
+      try{if(l.node.port){l.node.port.onmessage=null;l.node.port.close()}}catch(e){}
+      try{l.node.onaudioprocess=null}catch(e){}
+      try{l.mix.disconnect()}catch(e){}
+      l.chunks=[]; l.n=0;
+    });
+    try{if(cap.mute)cap.mute.disconnect()}catch(e){}
+    cap.mic=cap.spk=cap.mute=null;
+  }
+
+  /* ---------- audio -> WAV for transcription ---------- */
+  function wavBlob(pcm){
+    var len=pcm.length, hdr=new DataView(new ArrayBuffer(44));
+    function str(off,t){for(var q=0;q<t.length;q++)hdr.setUint8(off+q,t.charCodeAt(q))}
+    str(0,'RIFF'); hdr.setUint32(4,36+len*2,true); str(8,'WAVE'); str(12,'fmt ');
+    hdr.setUint32(16,16,true); hdr.setUint16(20,1,true); hdr.setUint16(22,1,true);
+    hdr.setUint32(24,16000,true); hdr.setUint32(28,32000,true); hdr.setUint16(32,2,true); hdr.setUint16(34,16,true);
+    str(36,'data'); hdr.setUint32(40,len*2,true);
+    return new Blob([hdr,pcm],{type:'audio/wav'});
+  }
+  /* Drops silence at both ends (it makes Whisper hallucinate) and returns a WAV blob with some extra info,
+     or null when there is nothing but silence. */
+  function prepWav(pcm,t){
+    var len=pcm.length, peak=0, i, w, m, q;
+    for(i=0;i<len;i++){var a=pcm[i]<0?-pcm[i]:pcm[i];if(a>peak)peak=a}
+    if(peak<328) return null;
+    var WIN=800, THR=Math.max(330,(t||0)*32768*0.5), first=-1, last=-1;
+    for(w=0;w*WIN<len;w++){
+      /* a window counts as sound only if its average level is up, so a single codec click does not */
+      var e=Math.min(len,(w+1)*WIN), sq=0;
+      m=0; for(q=w*WIN;q<e;q++){var v=pcm[q]<0?-pcm[q]:pcm[q];if(v>m)m=v;sq+=v*v}
+      if(m>THR&&Math.sqrt(sq/Math.max(1,e-w*WIN))>THR*0.25){if(first<0)first=w;last=w}
+    }
+    if(first<0) return null;
+    var PAD=4000, from=Math.max(0,first*WIN-PAD), to=Math.min(len,(last+1)*WIN+PAD);
+    var tail=(len-to)/16000;
+    var cut=pcm.subarray(from,to);
+    var blob=wavBlob(cut);
+    blob.dur=cut.length/16000; blob.off=from/16000; blob.tail=tail; blob.pcm=cut; blob.thr=THR;
+    return blob;
+  }
+  function liveBlob(lane,sec,t){
+    var need=Math.min(lane.n,Math.round(sec*16000)), pcm=new Int16Array(need), o=need, i;
+    for(i=lane.chunks.length-1;i>=0&&o>0;i--){
+      var c=lane.chunks[i], take=Math.min(c.length,o);
+      pcm.set(c.subarray(c.length-take),o-take); o-=take;
+    }
+    return prepWav(pcm,t);
+  }
+
+  /* ---------- show the answer ---------- */
+  function layoutAns(text){
+    var maxW=340, maxH=330, size=34, lines=[];
+    for(;size>=8;size-=1){
+      g.font=size+'px "Patrick Hand","Segoe Print","Comic Sans MS",cursive';
+      lines=[];
+      text.split('\n').forEach(function(par){
+        var line='';
+        par.split(/\s+/).forEach(function(w){
+          var t=line?line+' '+w:w;
+          if(g.measureText(t).width>maxW&&line){lines.push(line);line=w}else line=t;
+        });
+        lines.push(line);
+      });
+      if(lines.length*size*1.25<=maxH) break;
+    }
+    ansState={lines:lines,size:size,until:Date.now()+45000};
+  }
+  function showAns(text){
+    var box=$('ans'); box.hidden=false; box.innerHTML='';
+    box.appendChild(document.createTextNode(text));
+    layoutAns(text); draw();
+  }
+  $('ans').addEventListener('click',function(){$('ans').hidden=true;if(ansState)ansState.until=0;draw()});
+  function setTrans(text){
+    var tr=$('trans'); tr.value=text; tr.style.height='auto'; tr.style.height=tr.scrollHeight+4+'px';
+  }
+  function setBusy(b){helping=b;$('help').disabled=b;$('trbtn').disabled=b}
+
+  /* ---------- Groq (on demand only) ---------- */
+  function load(k,d){try{return localStorage.getItem(k)||d}catch(e){return d}}
+  function save(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  $('gkey').value=load('sr_gkey',''); $('sysp').value=load('sr_sysp',$('sysp').value);
+  $('ctxs').value=load('sr_ctxs','45'); $('ctxVal').textContent=$('ctxs').value+'s';
+  var ctxWant=+$('ctxs').value;
+  $('gkey').addEventListener('input',function(){save('sr_gkey',$('gkey').value.trim())});
+  $('sysp').addEventListener('input',function(){save('sr_sysp',$('sysp').value)});
+  $('ctxs').addEventListener('input',function(){ctxWant=+$('ctxs').value;$('ctxVal').textContent=$('ctxs').value+'s';save('sr_ctxs',$('ctxs').value)});
+  async function groqErr(r){
+    try{var j=await r.json();return (j.error&&j.error.message)||('HTTP '+r.status)}catch(e){return 'HTTP '+r.status}
+  }
+  /* baseT = time (seconds) of the start of this blob, in whatever timeline the caller uses */
+  async function transcribeBlob(blob,who,key,baseT){
+    if(!blob) return [];
+    var fd=new FormData();
+    fd.append('file',blob,'audio.wav');
+    fd.append('model','whisper-large-v3-turbo');
+    fd.append('response_format','verbose_json');
+    fd.append('timestamp_granularities[]','segment');
+    fd.append('temperature','0');
+    var r=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd});
+    if(!r.ok) throw new Error(await groqErr(r));
+    var j=await r.json(), out=[];
+    (j.segments||[]).forEach(function(s){
+      var tx=(s.text||'').trim();
+      if(!tx) return;
+      if(s.no_speech_prob>0.6||s.avg_logprob<-1.2) return;
+      var a=Math.max(0,Math.floor(s.start*16000)), z=Math.min(blob.pcm.length,Math.ceil(s.end*16000)), mx=0;
+      for(var q=a;q<z;q++){var v=Math.abs(blob.pcm[q]);if(v>mx)mx=v}
+      if(mx<blob.thr) return;
+      out.push({t:baseT+s.start,text:tx,who:who});
+    });
+    if(!out.length&&!(j.segments&&j.segments.length)&&(j.text||'').trim()) out.push({t:baseT,text:j.text.trim(),who:who});
+    return out;
+  }
+  function toTranscript(entries){
+    entries.sort(function(a,b){return a.t-b.t});
+    var lines=[];
+    entries.forEach(function(s){
+      var last=lines[lines.length-1];
+      if(last&&last.who===s.who) last.text+=' '+s.text; else lines.push({who:s.who,text:s.text});
+    });
+    return lines.map(function(l){return l.who+': '+l.text}).join('\n');
+  }
+  async function askCoach(key,heard,hasCall,selected){
+    var sys=($('sysp').value.trim()||$('sysp').defaultValue.trim());
+    if(heard.length>60000) heard='[...]\n'+heard.slice(-60000);
+    var intro=selected?'Transcript of a section of my call that I selected from the recording. ':'Transcript of the last moments of my conversation. ';
+    intro+='"Me" is my microphone (me), "Them" is the other side (speaker or the customer\'s audio). ';
+    if(hasCall) intro+='Lines labelled "Call" come from a mixed recording where the two sides are not separated, so work out who is the agent and who is the customer from context. ';
+    intro+='Lines are in time order:\n';
+    var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},
+      body:JSON.stringify({model:LLM_MODEL,temperature:0.5,max_tokens:700,messages:[
+          {role:'system',content:sys},
+          {role:'user',content:intro+heard}
+      ]})
+    });
+    if(!r.ok) throw new Error(await groqErr(r));
+    var reply=(((await r.json()).choices||[{}])[0].message||{}).content||'';
+    reply=reply.replace(/<think>[\s\S]*?<\/think>/gi,'').replace(/<think>[\s\S]*$/i,'').trim();
+    return reply||'No suggestion came back.';
+  }
+
+  /* live help while listening: the last few seconds, mic and speaker kept apart */
+  async function helpLive(){
+    if(!running||!cap.mic||cap.mic.n<16000){showMsg('Start listening first, then ask for help.');return}
+    var key=$('gkey').value.trim();
+    if(!key){showMsg('Paste your Groq API key in the settings first.');return}
+    setBusy(true);
+    showAns('Thinking\u2026');
+    try{
+      var avail=Math.max(1,Math.floor(cap.mic.n/16000));
+      var sec=Math.min(ctxWant,avail);
+      var micBlob=liveBlob(cap.mic,sec,thr(sens)), spkBlob=(spkAn&&cap.spk)?liveBlob(cap.spk,sec,thr($('ssens'))):null;
+      var parts=await Promise.all([
+        micBlob?transcribeBlob(micBlob,'Me',key,-(micBlob.dur+micBlob.tail)):[],
+        spkBlob?transcribeBlob(spkBlob,'Them',key,-(spkBlob.dur+spkBlob.tail)):[]
+      ]);
+      var heard=toTranscript(parts[0].concat(parts[1]));
+      setTrans(heard);
+      if(!heard){showAns('I could not hear any speech in that stretch.');return}
+      var reply=await askCoach(key,heard,false,false);
+      showAns(reply);
+      if(window.Notification&&Notification.permission==='granted'&&document.hidden){
+        try{new Notification('Collection tip',{body:reply})}catch(e){}
+      }
+    }catch(e){
+      showAns('Help failed: '+((e&&e.message)||e));
+    }finally{
+      setBusy(false);
+    }
+  }
+
+  /* ---------- transcribing a selected section (while paused) ---------- */
+  async function decodeBlob(blob){return ctx.decodeAudioData(await blob.arrayBuffer())}
+  /* copies the part of a decoded segment that falls into [c0,c1) into a 16 kHz mono lane */
+  function addRange(lanes,name,b,chs,s,c0,c1,len){
+    var sr=b.sampleRate, from=Math.max(c0,s.start), to=Math.min(c1,s.start+b.duration);
+    if(to<=from) return;
+    var i0=Math.floor((from-s.start)*sr), i1=Math.min(b.length,Math.ceil((to-s.start)*sr));
+    var o=Math.round((from-c0)*16000);
+    var out=lanes[name]||(lanes[name]=new Int16Array(len));
+    var ratio=sr/16000, m=Math.min(out.length-o,Math.floor((i1-i0)/ratio));
+    var datas=chs.map(function(c){return b.getChannelData(c)}), nc=datas.length;
+    for(var j=0;j<m;j++){
+      var a=i0+Math.floor(j*ratio), z=Math.min(i1,Math.max(a+1,i0+Math.floor((j+1)*ratio))), sum=0;
+      for(var k=a;k<z;k++){for(var q=0;q<nc;q++) sum+=datas[q][k]}
+      out[o+j]=toI16(sum/((z-a)*nc));
+    }
+  }
+  async function transcribeRange(a,b,key,status){
+    var snap=segs.map(function(s){return {blob:s.blob,split:s.split,start:s.start,dur:s.dur}})
+      .filter(function(s){return s.start<b&&s.start+s.dur+2>a})
+      .sort(function(x,y){return x.start-y.start});
+    if(!snap.length) return {heard:'',hasCall:false};
+    var n=Math.max(1,Math.ceil((b-a)/CHUNK_SEC)), entries=[], hasCall=false;
+    var th={Me:thr(sens),Them:thr($('ssens')),Call:0};
+    for(var c=0;c<n;c++){
+      var c0=a+c*CHUNK_SEC, c1=Math.min(b,c0+CHUNK_SEC), len=Math.max(1,Math.round((c1-c0)*16000)), lanes={};
+      var tag=n>1?' ('+(c+1)+'/'+n+')':'';
+      status('Reading the selected audio'+tag+'\u2026');
+      for(var i=0;i<snap.length;i++){
+        var s=snap[i];
+        if(s.start>=c1||s.start+s.dur+2<=c0) continue;
+        var sb=null;
+        if(s.split){try{sb=await decodeBlob(s.split)}catch(e){sb=null}}
+        if(sb&&sb.numberOfChannels>=2){
+          addRange(lanes,'Me',sb,[0],s,c0,c1,len);
+          addRange(lanes,'Them',sb,[1],s,c0,c1,len);
+        }else{
+          if(!sb){try{sb=await decodeBlob(s.blob)}catch(e){continue}}
+          var chs=[]; for(var q=0;q<sb.numberOfChannels;q++) chs.push(q);
+          addRange(lanes,'Call',sb,chs,s,c0,c1,len);
+        }
+        sb=null;
+      }
+      var jobs=[];
+      ['Me','Them','Call'].forEach(function(name){
+        if(!lanes[name]) return;
+        var blob=prepWav(lanes[name],th[name]);
+        if(!blob) return;
+        if(name==='Call') hasCall=true;
+        jobs.push(transcribeBlob(blob,name,key,c0+blob.off));
+      });
+      lanes=null;
+      status('Transcribing'+tag+'\u2026');
+      var res=await Promise.all(jobs);
+      res.forEach(function(r){entries=entries.concat(r)});
+    }
+    return {heard:toTranscript(entries),hasCall:hasCall};
+  }
+  async function useSelection(mode){
+    if(helping) return;
+    var sel=activeSelection;
+    if(!sel||sel.end-sel.start<0.5){showMsg('Drag on the wave to select a section first.');return}
+    var a=Math.min(sel.start,sel.end), b=Math.max(sel.start,sel.end);
+    var key=$('gkey').value.trim();
+    if(!key){showMsg('Paste your Groq API key in the settings first.');return}
+    setBusy(true);
+    showAns('Reading the selected audio\u2026');
+    try{
+      var r=await transcribeRange(a,b,key,showAns);
+      setTrans(r.heard);
+      if(!r.heard){showAns('I could not hear any speech in that section.');return}
+      if(mode==='transcribe'){
+        showAns('Transcript ready. It is in "Last transcript" below.');
+        $('trans').scrollIntoView({behavior:'smooth',block:'center'});
+        return;
+      }
+      showAns('Thinking\u2026');
+      var reply=await askCoach(key,r.heard,r.hasCall,true);
+      showAns(reply);
+      if(window.Notification&&Notification.permission==='granted'&&document.hidden){
+        try{new Notification('Collection tip',{body:reply})}catch(e){}
+      }
+    }catch(e){
+      showAns((mode==='transcribe'?'Transcribing failed: ':'Help failed: ')+((e&&e.message)||e));
+    }finally{
+      setBusy(false);
+    }
+  }
+
+  function help(){
+    if(helping) return;
+    if(running) return helpLive();
+    if(segs.length) return useSelection('help');
+    showMsg('Start listening first, then ask for help.');
+  }
+  $('help').addEventListener('click',help);
+  $('trbtn').addEventListener('click',function(){useSelection('transcribe')});
+  document.addEventListener('keydown',function(e){
+    if((e.key==='h'||e.key==='H')&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&!/^(INPUT|TEXTAREA|SELECT)$/.test((e.target&&e.target.tagName)||'')){
+      e.preventDefault(); help();
+    }
+  });
+
+  /* ---------- drop audio files ---------- */
+  var dragDepth=0;
+  function hasFiles(e){return e.dataTransfer&&Array.prototype.indexOf.call(e.dataTransfer.types||[],'Files')>=0}
+  window.addEventListener('dragenter',function(e){if(!hasFiles(e))return;e.preventDefault();dragDepth++;document.body.classList.add('drop')});
+  window.addEventListener('dragover',function(e){if(hasFiles(e))e.preventDefault()});
+  window.addEventListener('dragleave',function(e){
+    if(!hasFiles(e))return;
+    dragDepth=Math.max(0,dragDepth-1);
+    if(!dragDepth)document.body.classList.remove('drop');
+  });
+  window.addEventListener('drop',function(e){
+    if(!hasFiles(e))return;
+    e.preventDefault();dragDepth=0;document.body.classList.remove('drop');
+    var files=Array.prototype.filter.call(e.dataTransfer.files,function(f){
+      return /^audio\//.test(f.type)||/\.(mp3|wav|m4a|ogg|webm)$/i.test(f.name);
+    });
+    if(!files.length){showMsg('Drop an mp3 audio file.');return}
+    loadFiles(files);
+  });
+
+  /* Files are decoded one at a time and each decoded buffer is released as soon as its wave is computed. */
+  async function loadFiles(files){
+    if(running){showMsg('Stop listening first, then drop a file.');return}
+    if(loading||exporting) return;
+    loading=true;
+    showMsg('Loading...',60000);
+    var nPeaks=[], nSpk=[], nFlags=[], nSegs=[];
+    try{
+      var AC=window.AudioContext||window.webkitAudioContext;
+      if(!ctx||ctx.state==='closed') ctx=new AC();
+      var tm=thr(sens), lim=+limit.value, lastS=0;
+      for(var k=0;k<files.length;k++){
+        var bf=await ctx.decodeAudioData(await files[k].arrayBuffer());
+        var t0=nPeaks.length/PER, nb=Math.ceil(bf.duration*PER), bs=bf.sampleRate*BK/1000,
+            ch=bf.numberOfChannels, data=[], c;
+        for(c=0;c<ch;c++) data.push(bf.getChannelData(c));
+        for(var j=0;j<nb;j++){
+          var a=Math.floor(j*bs), z=Math.min(bf.length,Math.floor((j+1)*bs)), pk=0;
+          for(var s=a;s<z;s+=4096){
+            var en=Math.min(z,s+4096), sum=0;
+            for(var x=s;x<en;x++){
+              var v=0; for(c=0;c<ch;c++) v+=data[c][x];
+              v/=ch; sum+=v*v;
+            }
+            var r=Math.sqrt(sum/Math.max(1,en-s)); if(r>pk) pk=r;
+          }
+          var tt=t0+j/PER;
+          if(pk>tm) lastS=tt;
+          nPeaks.push(pk); nSpk.push(0);
+          nFlags.push(tt-lastS>=lim?1:0);
+        }
+        nSegs.push({blob:files[k],url:URL.createObjectURL(files[k]),start:t0,dur:bf.duration,split:null});
+        bf=null; data=null;
+      }
+      dropRec();
+      peaks=nPeaks; speaks=nSpk; flags=nFlags; segs=nSegs; spkUsed=false; markers=[]; renderMarkers(); trimNotified=false;
+      follow=false; $('wscroll').scrollLeft=0;
+      drawWave();
+      showMsg('Loaded '+files.length+' file'+(files.length>1?'s':'')+'.');
+    }catch(err){
+      nSegs.forEach(function(s){URL.revokeObjectURL(s.url)});
+      showMsg('Could not read that audio file.');
+    }finally{
+      loading=false;
+    }
+  }
+
+  drawWave();
+})();
+</script>
+</body>
+</html>
